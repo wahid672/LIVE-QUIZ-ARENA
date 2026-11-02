@@ -282,45 +282,128 @@ function playMilestoneFanfareSFX() {
 // TEXT TO SPEECH (TTS) ENGINE
 // ============================================================
 
+// ============================================================
+// STABLE HIGH-PERFORMANCE TTS ENGINE (LONG RUN 3+ HOURS PROOF)
+// ============================================================
+
+let activeUtterance = null;
+let ttsWatchdogTimer = null;
+let ttsVoiceCache = null;
+
+function cleanQuestionTextForSpeech(text) {
+  if (!text) return "";
+  let clean = String(text).trim();
+  clean = clean.replace(/[*_#`~]/g, "");
+  clean = clean.replace(/\+/g, " tambah ");
+  clean = clean.replace(/\s*-\s*/g, " kurang ");
+  clean = clean.replace(/\s*[*×]\s*/g, " kali ");
+  clean = clean.replace(/\s*[\/÷]\s*/g, " bagi ");
+  clean = clean.replace(/\s*=\s*/g, " sama dengan ");
+  clean = clean.replace(/\s*%\s*/g, " persen ");
+  clean = clean.replace(/\.{2,}/g, ".");
+  clean = clean.replace(/\?{2,}/g, "?");
+  clean = clean.replace(/\s{2,}/g, " ");
+  return clean.trim();
+}
+
+function getBestIndonesianVoice() {
+  if (ttsVoiceCache) return ttsVoiceCache;
+  if (!('speechSynthesis' in window)) return null;
+  const voices = window.speechSynthesis.getVoices() || [];
+  ttsVoiceCache = voices.find(
+    (v) => v.lang && (v.lang.includes("id-ID") || v.lang.includes("id_ID") || v.lang.toLowerCase().startsWith("id"))
+  ) || null;
+  return ttsVoiceCache;
+}
+
+if ('speechSynthesis' in window) {
+  window.speechSynthesis.onvoiceschanged = () => {
+    ttsVoiceCache = null;
+    getBestIndonesianVoice();
+  };
+}
+
+function clearTTSWatchdog() {
+  if (ttsWatchdogTimer) {
+    clearInterval(ttsWatchdogTimer);
+    ttsWatchdogTimer = null;
+  }
+}
+
+function stopSpeech() {
+  clearTTSWatchdog();
+  if (!('speechSynthesis' in window)) return;
+  try {
+    window.speechSynthesis.cancel();
+  } catch (_) {}
+  activeUtterance = null;
+}
+
 function speakQuestion(question) {
   if (!('speechSynthesis' in window) || typeof SpeechSynthesisUtterance === 'undefined') return;
   if (!question || !question.question) return;
   if (question.id && question.id === lastSpokenQuestionId) return;
 
-  try {
-    lastSpokenQuestionId = question.id || question.question;
-    window.speechSynthesis.cancel();
+  lastSpokenQuestionId = question.id || question.question;
+  const spokenText = cleanQuestionTextForSpeech(question.question);
+  if (!spokenText) return;
 
-    const utterance = new SpeechSynthesisUtterance(question.question);
-    const voices = window.speechSynthesis.getVoices() || [];
-    const indonesianVoice = voices.find(
-      (v) => v.lang && (v.lang.includes("id-ID") || v.lang.includes("id_ID") || v.lang.toLowerCase().startsWith("id"))
-    );
-    if (indonesianVoice) {
-      utterance.voice = indonesianVoice;
+  // Hentikan utterance sebelumnya dan beri jeda tick untuk audio pipeline browser
+  stopSpeech();
+
+  setTimeout(() => {
+    try {
+      if (window.speechSynthesis.paused) {
+        window.speechSynthesis.resume();
+      }
+
+      const utterance = new SpeechSynthesisUtterance(spokenText);
+      // PENTING: Simpan di global activeUtterance agar TIDAK DI-GARBAGE COLLECT oleh V8 saat berbicara
+      activeUtterance = utterance;
+
+      const voice = getBestIndonesianVoice();
+      if (voice) {
+        utterance.voice = voice;
+      }
+      utterance.lang = "id-ID";
+      utterance.rate = 1.05;
+      utterance.pitch = 1.0;
+
+      utterance.onend = () => {
+        clearTTSWatchdog();
+        activeUtterance = null;
+      };
+
+      utterance.onerror = (e) => {
+        clearTTSWatchdog();
+        activeUtterance = null;
+        if (e.error !== "canceled" && e.error !== "interrupted") {
+          console.warn("TTS error:", e.error);
+        }
+      };
+
+      // Watchdog Anti-Freeze Chromium: Menjaga audio thread tetap lancar dan tidak stuttering
+      clearTTSWatchdog();
+      ttsWatchdogTimer = setInterval(() => {
+        if (!('speechSynthesis' in window)) {
+          clearTTSWatchdog();
+          return;
+        }
+        if (window.speechSynthesis.speaking) {
+          window.speechSynthesis.pause();
+          window.speechSynthesis.resume();
+        } else {
+          clearTTSWatchdog();
+        }
+      }, 9000);
+
+      window.speechSynthesis.speak(utterance);
+    } catch (err) {
+      console.warn("TTS tidak didukung atau tertahan browser:", err);
+      clearTTSWatchdog();
+      activeUtterance = null;
     }
-    utterance.lang = "id-ID";
-    utterance.rate = 1.0;
-    utterance.pitch = 1.0;
-    utterance.onerror = () => {};
-
-    window.speechSynthesis.speak(utterance);
-  } catch (err) {
-    console.warn("TTS tidak didukung atau tertahan browser:", err);
-  }
-}
-
-function stopSpeech() {
-  if (!('speechSynthesis' in window)) return;
-  try {
-    window.speechSynthesis.cancel();
-  } catch (_) {}
-}
-
-if ('speechSynthesis' in window && window.speechSynthesis.onvoiceschanged !== undefined) {
-  window.speechSynthesis.onvoiceschanged = () => {
-    try { window.speechSynthesis.getVoices(); } catch (_) {}
-  };
+  }, 45);
 }
 
 // ============================================================

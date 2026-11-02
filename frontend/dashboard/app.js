@@ -525,6 +525,15 @@ function renderState(state) {
       charBadge.className = `badge ${state.character_animation ? "bg-purple-lt" : "bg-secondary-lt"}`;
     }
   }
+  if (state.used_questions_count !== undefined && state.total_bank_questions !== undefined) {
+    const used = Number(state.used_questions_count || 0);
+    const total = Number(state.total_bank_questions || 6000);
+    const remaining = Math.max(0, total - used);
+    const label = $("usedQuestionCountLabel");
+    if (label) {
+      label.textContent = `${used.toLocaleString()} / ${total.toLocaleString()} (Sisa ${remaining.toLocaleString()})`;
+    }
+  }
   $("modeBadge").textContent = `${(state.mode || "random").toUpperCase()} MODE${autoPlay ? " · AUTO PLAY" : ""}${state.endless ? " · ENDLESS" : ""}`;
   renderLeaderboard(state.leaderboard || []);
 }
@@ -629,6 +638,21 @@ $("charAnimationSwitch")?.addEventListener("change", async (e) => {
       badge.textContent = !enabled ? "AKTIF" : "NONAKTIF";
       badge.className = `badge ${!enabled ? "bg-purple-lt" : "bg-secondary-lt"}`;
     }
+  }
+});
+
+$("btnResetQuestionHistory")?.addEventListener("click", async () => {
+  if (!confirm("Reset riwayat perputaran soal? Seluruh 6.000 soal akan dapat dimainkan kembali dari awal.")) return;
+  try {
+    const res = await api("/api/game/reset-history", "POST", {});
+    setNotice("Riwayat perputaran soal berhasil direset.");
+    const total = res.total_bank_questions || 6000;
+    const label = $("usedQuestionCountLabel");
+    if (label) {
+      label.textContent = `0 / ${total.toLocaleString()} (Sisa ${total.toLocaleString()})`;
+    }
+  } catch (err) {
+    setNotice(`Gagal mereset riwayat: ${err.message}`, "error");
   }
 });
 

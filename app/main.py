@@ -60,7 +60,10 @@ async def _state_broadcaster(app: FastAPI) -> None:
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     question_bank = QuestionBank.from_file(QUESTION_FILE)
-    app.state.engine = QuizEngine(question_bank)
+    app.state.engine = QuizEngine(
+        question_bank,
+        used_questions_file=BASE_DIR / "data" / "used_questions.json",
+    )
     app.state.connections = ConnectionManager()
     app.state.interactions = LiveInteractionManager(app.state.engine)
     app.state.tiktok = TikTokLiveBridge(app.state.interactions)
@@ -337,6 +340,11 @@ async def toggle_character_animation(
 ) -> dict[str, Any]:
     enabled = await get_engine(request).set_character_animation(payload.enabled)
     return {"status": "ok", "character_animation": enabled}
+
+
+@app.post("/api/game/reset-history", tags=["Game"])
+async def reset_game_history(request: Request) -> dict[str, Any]:
+    return await get_engine(request).reset_used_questions()
 
 
 

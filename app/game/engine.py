@@ -36,8 +36,13 @@ class QuizEngine:
     tidak mengubah skor atau jawaban pemain secara tumpang tindih.
     """
 
-    def __init__(self, question_bank: QuestionBank):
+    def __init__(
+        self,
+        question_bank: QuestionBank,
+        used_questions_file: Path | None = None,
+    ):
         self.question_bank = question_bank
+        self._used_questions_file = used_questions_file
         self._lock = asyncio.Lock()
         self._timer_task: asyncio.Task | None = None
         self._auto_advance_task: asyncio.Task | None = None
@@ -70,6 +75,34 @@ class QuizEngine:
         self._continue_scheduled = False
         self._delayed_continue_task: asyncio.Task | None = None
         self._character_animation = True
+        self._load_used_questions()
+
+    def _load_used_questions(self) -> None:
+        if not self._used_questions_file or not self._used_questions_file.exists():
+            return
+        try:
+            with self._used_questions_file.open("r", encoding="utf-8") as f:
+                saved = json.load(f)
+                if isinstance(saved, list):
+                    all_ids = {q.id for q in self.question_bank.all()}
+                    self._used_question_ids = {str(qid) for qid in saved if str(qid) in all_ids}
+                    if len(self._used_question_ids) >= len(all_ids):
+                        self._used_question_ids.clear()
+                        self._save_used_questions()
+        except Exception:
+            self._used_question_ids = set()
+
+    def _save_used_questions(self) -> None:
+        if not self._used_questions_file:
+            return
+        try:
+            self._used_questions_file.parent.mkdir(parents=True, exist_ok=True)
+            tmp_path = self._used_questions_file.with_suffix(".tmp")
+            with tmp_path.open("w", encoding="utf-8") as f:
+                json.dump(list(self._used_question_ids), f, ensure_ascii=False)
+            tmp_path.replace(self._used_questions_file)
+        except Exception:
+            pass
 
     @staticmethod
     def parse_answer(raw_answer: str) -> str | None:
@@ -117,7 +150,10 @@ class QuizEngine:
             self._players.clear()
             self._answers.clear()
             self._fastest_correct = None
-            self._used_question_ids.clear()
+            if len(self._used_question_ids) >= len(self.question_bank.all()):
+                self._used_question_ids.clear()
+                self._save_used_questions()
+                self._save_used_questions()
             self._last_random_question_id = None
 
             self._mode = mode
@@ -424,6 +460,7 @@ class QuizEngine:
 
             if len(self._used_question_ids) >= len(self.question_bank.all()):
                 self._used_question_ids.clear()
+                self._save_used_questions()
 
             if self._mode == "random":
                 question = self._select_question_locked("random", None)
@@ -516,8 +553,20 @@ class QuizEngine:
     def delete_question(self, question_id: str) -> None:
         self.question_bank.delete_question(question_id)
         self._used_question_ids.discard(question_id)
+        self._save_used_questions()
         if self._last_random_question_id == question_id:
             self._last_random_question_id = None
+
+    async def reset_used_questions(self) -> dict[str, Any]:
+        async with self._lock:
+            self._used_question_ids.clear()
+            self._last_random_question_id = None
+            self._save_used_questions()
+            return {
+                "status": "ok",
+                "used_questions_count": 0,
+                "total_bank_questions": len(self.question_bank.all()),
+            }
 
     async def set_character_animation(self, enabled: bool) -> bool:
         async with self._lock:
@@ -532,20 +581,25 @@ class QuizEngine:
         if mode == "manual":
             if not question_id:
                 raise ValueError("Pilih question_id untuk mode manual.")
-            return self.question_bank.get(question_id)
+            q = self.question_bank.get(question_id)
+            self._used_question_ids.add(q.id)
+            self._save_used_questions()
+            return q
 
         if mode != "random":
             raise ValueError("Mode soal tidak dikenal.")
 
+        all_questions = self.question_bank.all()
         available = [
             question
-            for question in self.question_bank.all()
+            for question in all_questions
             if question.id not in self._used_question_ids
         ]
 
         if not available:
             self._used_question_ids.clear()
-            available = self.question_bank.all()
+            self._save_used_questions()
+            available = all_questions
 
         if len(available) > 1 and self._last_random_question_id:
             without_last = [
@@ -558,6 +612,7 @@ class QuizEngine:
         question = random.choice(available)
         self._used_question_ids.add(question.id)
         self._last_random_question_id = question.id
+        self._save_used_questions()
         return question
 
     def _start_question_locked(self, question: Question) -> None:
@@ -635,7 +690,10 @@ class QuizEngine:
             -1,
         )
         next_index = (current_index + 1) % len(questions)
-        return questions[next_index]
+        next_question = questions[next_index]
+        self._used_question_ids.add(next_question.id)
+        self._save_used_questions()
+        return next_question
 
     def _reveal_locked(self) -> None:
         self._phase = GamePhase.REVEAL
@@ -771,4 +829,6 @@ class QuizEngine:
             ),
             "leaderboard": self._leaderboard_locked(),
             "character_animation": self._character_animation,
+            "used_questions_count": len(self._used_question_ids),
+            "total_bank_questions": len(self.question_bank.all()),
         }

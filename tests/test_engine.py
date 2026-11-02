@@ -321,3 +321,36 @@ async def test_character_animation_toggle_during_game():
     assert re_enabled_state["character_animation"] is True
 
     await engine.shutdown()
+
+
+@pytest.mark.asyncio
+async def test_question_cycling_without_repeating_until_all_used(tmp_path):
+    history_file = tmp_path / "used_questions.json"
+    bank = make_bank()  # Has 2 questions: q1, q2
+    engine = QuizEngine(bank, used_questions_file=history_file)
+
+    # 1. Round 1 picks 1 question
+    state1 = await engine.start_game(mode="random", question_count=2, answer_duration=10)
+    q1_id = state1["current_question"]["id"]
+    assert state1["used_questions_count"] == 1
+    assert state1["total_bank_questions"] == 2
+
+    # End game and start again: should NOT pick q1_id again!
+    await engine.end_game()
+    state2 = await engine.start_game(mode="random", question_count=2, answer_duration=10)
+    q2_id = state2["current_question"]["id"]
+    assert q2_id != q1_id
+    assert state2["used_questions_count"] == 2
+
+    # Now all 2 questions have been played once.
+    # Next session automatically resets cycle so questions can rotate again!
+    await engine.end_game()
+    state3 = await engine.start_game(mode="random", question_count=2, answer_duration=10)
+    assert state3["used_questions_count"] == 1
+
+    # Test explicit reset endpoint
+    reset_res = await engine.reset_used_questions()
+    assert reset_res["status"] == "ok"
+    assert reset_res["used_questions_count"] == 0
+
+    await engine.shutdown()
