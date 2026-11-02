@@ -1,0 +1,139 @@
+/* LIVE QUIZ ARENA theme layer on top of Tabler (MIT). */
+:root {
+  --lqa-accent: #7c8cff;
+  --lqa-accent-2: #5bd4cb;
+  --lqa-border: rgba(148, 163, 184, .16);
+  --lqa-panel: #151e2d;
+}
+html[data-bs-theme="dark"] {
+  --tblr-body-bg: #0d1420;
+  --tblr-bg-surface: #141e2d;
+  --tblr-bg-surface-secondary: #111a28;
+  --tblr-border-color: rgba(148, 163, 184, .16);
+  --tblr-primary: #7c8cff;
+  --tblr-primary-rgb: 124, 140, 255;
+}
+body { background: #0d1420; }
+.page { min-height: 100vh; }
+.navbar-vertical { background: #101927 !important; border-right: 1px solid var(--lqa-border); }
+.navbar-brand { padding: 1.25rem 1.25rem 1.8rem; }
+.brand-lockup { display:flex; align-items:center; gap:12px; color:inherit; text-decoration:none; }
+.brand-mark { width:39px;height:39px;display:grid;place-items:center;border-radius:10px;background:#26365b;color:#dce4ff;font-weight:800;letter-spacing:-1px;font-size:15px;border:1px solid #40527d; }
+.brand-copy strong,.brand-copy small { display:block; }
+.brand-copy strong { font-size:13px;letter-spacing:1.2px;color:#f1f5fb; }
+.brand-copy small { font-size:9px;letter-spacing:1.7px;color:#8d9bb0;margin-top:3px; }
+.navbar-nav .nav-link { border-radius:7px;margin:2px 10px;padding:.65rem .8rem;color:#aab6c9; }
+.navbar-nav .nav-link:hover { color:#f2f5fa;background:rgba(148,163,184,.08); }
+.navbar-nav .nav-item.active>.nav-link { color:#f5f7ff;background:rgba(124,140,255,.13);box-shadow:inset 2px 0 #8b9aff; }
+.nav-link-icon { color:#91a0b8; }
+.nav-item.active .nav-link-icon { color:#aab6ff; }
+.nav-link-badge { margin-left:auto;color:#7e8ba2; }
+.sidebar-bottom { margin-top:auto;padding:1.5rem .75rem .5rem; }
+.server-status { display:flex;align-items:center;gap:10px;padding:12px;border:1px solid var(--lqa-border);border-radius:8px;background:rgba(255,255,255,.025); }
+.server-status strong,.server-status small { display:block; }
+.server-status strong { font-size:12px;color:#e6ebf4; }
+.server-status small { font-size:10px;color:#8290a7;margin-top:2px; }
+.status-indicator { width:8px;height:8px;border-radius:50%;background:#d4a74e;flex:0 0 auto; }
+.status-indicator.online { background:#38c793;box-shadow:0 0 0 3px rgba(56,199,147,.12); }
+.sidebar-version { display:flex;justify-content:space-between;color:#718098;font-size:9px;letter-spacing:1px;padding:15px 2px 0; }
+.topbar { min-height:75px;border-bottom:1px solid var(--lqa-border);background:rgba(13,20,32,.92); }
+.page-pretitle { color:#8190a8;letter-spacing:1.5px;font-size:10px;font-weight:700; }
+.page-title { font-size:22px;font-weight:700;letter-spacing:-.5px; }
+.session-strip { display:flex;justify-content:space-between;align-items:center;padding:16px 19px;border:1px solid var(--lqa-border);border-radius:8px;background:#141e2d; }
+.session-title { font-size:15px;font-weight:700;letter-spacing:.3px;margin-top:4px; }
+.session-dot { display:inline-block;width:7px;height:7px;background:#3cc998;border-radius:50%;vertical-align:middle;margin:0 5px 1px 8px; }
+.card { border:1px solid var(--lqa-border);box-shadow:0 2px 8px rgba(0,0,0,.08);background:#141e2d; }
+.card-header { min-height:62px; }
+.card-title { font-size:14px;font-weight:700;letter-spacing:.1px; }
+.card-subtitle { color:#8290a6;font-size:11px;margin-top:3px; }
+.stat-card .card-body { min-height:115px; }
+.stat-card .h1 { font-size:25px;font-weight:700;letter-spacing:-.8px; }
+.subheader { font-size:10px;letter-spacing:1px;text-transform:uppercase;font-weight:700;color:#8c9ab0; }
+.autoplay-box { border:1px solid rgba(124,140,255,.2);background:rgba(124,140,255,.055);border-radius:8px;padding:14px; }
+.autoplay-icon { width:35px;height:35px;display:grid;place-items:center;border-radius:8px;background:rgba(124,140,255,.13);color:#aeb8ff;font-size:18px; }
+.autoplay-delay { width:110px;flex:0 0 110px; }
+.autoplay-delay .form-label { font-size:10px;color:#9aa8bc; }
+.form-hint { font-size:10px;color:#7f8da4;margin-top:5px;line-height:1.4; }
+.control-actions { display:flex;gap:8px;flex-wrap:wrap; }
+.control-actions .btn { font-size:12px; }
+.timer-card .card-body { min-height:275px; }
+.timer-dial { width:145px;height:145px;border-radius:50%;display:grid;place-items:center;position:relative;background:conic-gradient(var(--lqa-accent-2) 0%, #263448 0); }
+.timer-dial:before { content:"";position:absolute;inset:7px;border-radius:50%;background:#141e2d;border:1px solid var(--lqa-border); }
+.timer-dial>div { position:relative;text-align:center; }
+.timer-dial strong { display:block;font-size:38px;font-weight:700;letter-spacing:-2px;line-height:1.1; }
+.timer-dial span { display:block;font-size:8px;letter-spacing:1.8px;color:#8492a9;margin-top:5px; }
+.question-preview { font-size:20px;font-weight:650;line-height:1.4;letter-spacing:-.3px;margin:0 0 20px;min-height:56px; }
+.answer-option { display:flex;align-items:center;gap:10px;padding:11px 12px;min-height:48px;border:1px solid var(--lqa-border);border-radius:7px;background:rgba(255,255,255,.025);font-size:12px; }
+.answer-option b { width:25px;height:25px;display:grid;place-items:center;border-radius:6px;background:#273650;color:#c8d4ff;font-size:11px; }
+.answer-option.correct { border-color:rgba(56,199,147,.55);background:rgba(56,199,147,.09); }
+.answer-option.correct b { background:#1d7458;color:#fff; }
+.answer-explanation { padding:11px 13px;border:1px solid rgba(56,199,147,.35);background:rgba(56,199,147,.08);border-radius:7px;color:#a6e8cd;font-size:11px;line-height:1.5; }
+.table thead th { color:#8190a8;font-size:9px;text-transform:uppercase;letter-spacing:1px;font-weight:700; }
+.table tbody td { font-size:11px;vertical-align:middle; }
+.player-rank { display:inline-grid;place-items:center;width:24px;height:24px;border-radius:6px;background:#273650;color:#cbd6ff;font-size:10px;font-weight:700; }
+.player-name { font-weight:650;color:#e5eaf3; }
+.player-meta { font-size:9px;color:#8290a6;margin-top:2px; }
+.player-score { color:#7edbd0;font-weight:700;font-variant-numeric:tabular-nums; }
+.sim-result { border:1px solid var(--lqa-border);background:rgba(255,255,255,.025);border-radius:7px;padding:10px 12px;font-size:11px;color:#a5b1c5; }
+.sim-result.success { border-color:rgba(56,199,147,.35);color:#9be5c4;background:rgba(56,199,147,.07); }
+.sim-result.error { border-color:rgba(239,95,116,.35);color:#ffabb7;background:rgba(239,95,116,.07); }
+.hidden { display:none !important; }
+.ls-1 { letter-spacing:1px; }
+@media (min-width: 992px) {
+  .navbar-vertical { width:250px; }
+  .navbar-vertical+.page-wrapper { margin-left:250px; }
+}
+@media (max-width: 991.98px) {
+  .sidebar-bottom { padding-bottom:1rem; }
+  .navbar-vertical .navbar-collapse { max-height:calc(100vh - 70px);overflow-y:auto; }
+}
+@media (max-width: 575.98px) {
+  .session-strip { align-items:flex-start;gap:12px; }
+  .session-title { font-size:12px; }
+  .autoplay-box>div { flex-wrap:wrap; }
+  .autoplay-delay { width:100%;flex:1 1 100%; }
+  .control-actions .btn { flex:1 1 42%; }
+  .timer-card .card-body { min-height:235px; }
+}
+
+
+/* Stage 4: TikTok LIVE integration */
+.live-metric{padding:11px 12px;border:1px solid var(--tblr-border-color);border-radius:8px;background:rgba(255,255,255,.02);height:100%}
+.live-metric span{display:block;color:var(--tblr-secondary);font-size:10px;font-weight:700;letter-spacing:.08em}
+.live-metric strong{display:block;font-size:23px;font-weight:700;margin-top:4px}
+.community-meter{padding:13px;border:1px solid var(--tblr-border-color);border-radius:9px;background:rgba(255,255,255,.02)}
+.bg-cyan{background:#35c5d4!important}
+.live-event-list{display:flex;flex-direction:column}
+.live-event-row{display:grid;grid-template-columns:34px minmax(0,1fr) auto;align-items:center;gap:11px;padding:12px 16px;border-bottom:1px solid var(--tblr-border-color)}
+.live-event-row:last-child{border-bottom:0}
+.live-event-icon{width:32px;height:32px;border-radius:9px;display:grid;place-items:center;background:rgba(108,92,231,.13);color:#a99aff;font-size:16px}
+.live-event-icon.like{background:rgba(53,197,212,.12);color:#55d4e0}
+.live-event-icon.follow{background:rgba(46,204,113,.12);color:#54d99a}
+.live-event-icon.gift{background:rgba(255,193,7,.12);color:#f4c85d}
+.live-event-main{min-width:0}
+.live-event-main strong{display:block;font-size:12px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.live-event-main span{display:block;font-size:11px;color:var(--tblr-secondary);margin-top:2px;overflow-wrap:anywhere}
+.live-event-time{font-size:10px;color:var(--tblr-secondary);white-space:nowrap}
+.event-sim-field.hidden{display:none!important}
+@media(max-width:767px){.live-metric strong{font-size:18px}.live-event-row{padding:10px 12px}.live-event-time{display:none}}
+
+
+/* Stage 5: TikTok alignment and YouTube music playlist controls */
+.tiktok-connect-actions{display:flex;align-items:stretch;gap:8px}
+.tiktok-connect-actions .btn{min-height:38px;white-space:nowrap}
+.tiktok-connect-actions #tiktokDisconnectButton{width:46px;flex:0 0 46px}
+.music-control-bar{display:flex;align-items:flex-end;justify-content:space-between;gap:18px;flex-wrap:wrap;padding:12px;border:1px solid var(--tblr-border-color);border-radius:9px;background:rgba(255,255,255,.02)}
+.music-volume-control{width:min(100%,220px)}
+.music-volume-control .form-range{margin-bottom:0}
+.music-status-line{padding:9px 11px;border:1px solid var(--tblr-border-color);border-radius:7px;background:rgba(255,255,255,.025);font-size:11px;color:var(--tblr-secondary)}
+.music-now-playing{display:flex;align-items:center;gap:9px;font-size:12px;font-weight:700;min-width:0}
+.music-now-playing>i{font-size:18px;color:#ff5555}
+.music-now-playing>span:nth-child(2){overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.music-queue{display:flex;flex-direction:column;gap:6px;max-height:230px;overflow:auto}
+.music-queue-row{display:grid;grid-template-columns:30px minmax(0,1fr) auto auto;align-items:center;gap:9px;padding:8px 10px;border:1px solid var(--tblr-border-color);border-radius:8px;background:rgba(255,255,255,.018)}
+.music-queue-row.active{border-color:rgba(105,118,255,.65);background:rgba(105,118,255,.09)}
+.music-queue-index{width:26px;height:26px;display:grid;place-items:center;border-radius:6px;background:rgba(255,255,255,.06);color:var(--tblr-secondary);font-size:10px;font-weight:800}
+.music-queue-title{min-width:0;font-size:11px;font-weight:700;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.music-queue-kind{font-size:9px;color:var(--tblr-secondary);margin-top:2px}
+.music-queue-row .btn{--tblr-btn-padding-y:.25rem;--tblr-btn-padding-x:.45rem}
+@media(max-width:767px){.tiktok-connect-actions{width:100%}.tiktok-connect-actions #tiktokConnectButton{flex:1}.music-volume-control{width:100%}.music-queue-row{grid-template-columns:26px minmax(0,1fr) auto auto;gap:6px}}

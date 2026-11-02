@@ -1,0 +1,172 @@
+<!doctype html>
+<html lang="id" translate="no" class="notranslate">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, maximum-scale=1, user-scalable=no">
+  <meta name="theme-color" content="#060b14">
+  <meta name="color-scheme" content="dark">
+  <meta name="google" content="notranslate">
+  <title>LIVE QUIZ ARENA — Vertical Overlay 9:16</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=Space+Grotesk:wght@600;700;800;900&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/static/overlay/style.css">
+</head>
+<body class="notranslate" translate="no">
+
+  <!-- Locked 9:16 Mobile Viewport Frame -->
+  <div class="phone-shell">
+    
+    <!-- Phone Top Hardware Simulation (Subtle on 9:16, Bezel on Desktop) -->
+    <div class="phone-notch">
+      <div class="phone-speaker"></div>
+      <div class="phone-camera"></div>
+    </div>
+    
+    <main class="stage notranslate" translate="no" aria-label="Live Quiz Arena overlay">
+      <!-- 1. Topbar Header (Compact without logo, round subtitle, or live badge) -->
+      <header class="topbar">
+        <div class="brandbar">
+          <strong class="brand-title">LIVE QUIZ ARENA</strong>
+        </div>
+        <div class="topbar-meta">
+          <span class="category-pill" id="categoryText">GENERAL</span>
+        </div>
+      </header>
+
+      <!-- 2. Hero Question Card with Integrated Countdown -->
+      <section class="hero-card">
+        <div class="hero-header">
+          <div class="hero-meta-left">
+            <span class="eyebrow">PERTANYAAN</span>
+            <span class="question-id" id="questionId">LIVE ROUND</span>
+          </div>
+          <div class="hero-meta-right">
+            <span class="question-round" id="roundText">ROUND 00 / 00</span>
+          </div>
+        </div>
+
+        <div class="question-body">
+          <h1 class="question-text" id="questionText">Menunggu streamer memulai kuis...</h1>
+        </div>
+
+        <div class="question-foot">
+          <span class="answer-stats" id="answerStats">0 pemain · 0 jawaban</span>
+        </div>
+
+        <!-- Circular Countdown Timer -->
+        <div class="countdown-float" id="countdownFloat">
+          <div class="countdown-ring">
+            <svg viewBox="0 0 120 120" aria-hidden="true">
+              <circle class="countdown-track" cx="60" cy="60" r="50"></circle>
+              <circle class="countdown-progress" id="countdownProgress" cx="60" cy="60" r="50"></circle>
+            </svg>
+            <div class="countdown-core">
+              <span class="countdown-label" id="timerLabel">VOTING</span>
+              <strong class="countdown-value" id="timerText">--</strong>
+              <small class="countdown-caption" id="timerCaption">SEKON</small>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- 3. Answers Grid (4 Cards A, B, C, D) -->
+      <section class="answers-grid" id="answersGrid" aria-label="Pilihan Jawaban"></section>
+
+      <!-- 4. Dynamic Action Strip (Instruction only, reveal is combined into popup) -->
+      <div class="interaction-strip">
+        <div class="status-line" id="chatHint">KETIK A / B / C / D DI KOMENTAR LIVE</div>
+      </div>
+
+      <!-- 5. Arena Bottom Boards (Moved up with Viewer Power removed) -->
+      <div class="bottom-boards">
+        <section class="board-card">
+          <div class="section-top">
+            <div class="section-title-wrap">
+              <span class="eyebrow">TOP PLAYERS</span>
+              <h2>Leaderboard</h2>
+            </div>
+            <strong class="metric" id="leaderboardCount">0 pemain</strong>
+          </div>
+          <div class="leaderboard-grid" id="leaderboard"></div>
+        </section>
+
+        <section class="support-card">
+          <div class="section-top">
+            <div class="section-title-wrap">
+              <span class="eyebrow">SUPPORTERS</span>
+              <h2>Top Gifters</h2>
+            </div>
+            <strong class="metric" id="gifterCount">0 supporter</strong>
+          </div>
+          <div class="gifter-list" id="supportersList"></div>
+        </section>
+      </div>
+
+      <!-- Music Pill (Display Only Indicator) -->
+      <div class="music-pill hidden" id="musicPill" role="status">
+        <div class="music-pill-icon" id="musicPillIcon">♫</div>
+        <div class="music-pill-info">
+          <span class="music-pill-title" id="musicPillTitle">Memuat Musik...</span>
+        </div>
+      </div>
+
+      <!-- Footer -->
+      <footer class="overlay-footer">
+        <span>⚡ PLAY TOGETHER · WIN TOGETHER</span>
+        <span>LIVE QUIZ ARENA</span>
+      </footer>
+
+      <!-- Phone Bottom Home Bar Indicator -->
+      <div class="phone-home-indicator"></div>
+
+      <!-- Native HTML5 Audio Player (.mp3, .wav, .mov) -->
+      <audio id="overlayAudio" preload="auto"></audio>
+      <div class="gift-alert hidden" id="giftAlert" role="status" aria-live="polite">
+        <div class="gift-icon">🎁</div>
+        <div class="gift-copy">
+          <span>GIFT ALERT</span>
+          <strong id="giftAlertText">A viewer sent a gift</strong>
+        </div>
+      </div>
+
+      <!-- Center Popup for Fastest & Unified Round Summary + Correct Answer -->
+      <div class="center-popup hidden" id="centerPopup" role="status" aria-live="polite">
+        <div class="center-popup-card" id="centerPopupCard"></div>
+      </div>
+
+      <!-- Milestone Popup: Waiting Gift to Continue Next Round -->
+      <div class="milestone-popup hidden" id="milestonePopup" role="status" aria-live="polite">
+        <div class="milestone-popup-card" id="milestonePopupCard">
+          <div class="milestone-popup-icon" id="milestoneIcon">🏆</div>
+          <span class="milestone-popup-eyebrow" id="milestoneEyebrow">TARGET SOAL TERCAPAI</span>
+          <h2 class="milestone-popup-title" id="milestoneTitle">Ronde Selesai!</h2>
+          <p class="milestone-popup-desc" id="milestoneDesc">Kirim gift untuk otomatis memulai ronde berikutnya!</p>
+
+          <div class="milestone-gift-box">
+            <div class="milestone-gift-badge">🎁 GIFT GOAL</div>
+            <div class="milestone-gift-counter">
+              <span id="milestoneGiftCollected">0</span>
+              <span class="milestone-divider">/</span>
+              <span id="milestoneGiftTarget">5</span>
+              <small>DIAMONDS</small>
+            </div>
+            <div class="milestone-progress-track">
+              <div class="milestone-progress-fill" id="milestoneProgressFill" style="width: 0%;"></div>
+            </div>
+            <div class="milestone-gift-status" id="milestoneGiftStatus">
+              Terkumpul 0% · Butuh 5 diamonds lagi
+            </div>
+          </div>
+
+          <div class="milestone-foot-hint">
+            <span>⚡ Kirim kado apa saja di LIVE untuk membuka babak baru!</span>
+          </div>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <script src="/static/overlay/app.js"></script>
+</body>
+</html>
