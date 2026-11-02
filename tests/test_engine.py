@@ -293,3 +293,31 @@ async def test_round_ends_in_waiting_gift_and_continues_on_target_reached():
     assert ended_state["phase"] == GamePhase.FINISHED.value
 
     await engine.shutdown()
+
+
+@pytest.mark.asyncio
+async def test_character_animation_toggle_during_game():
+    engine = QuizEngine(make_bank())
+    # Default is enabled
+    state = await engine.get_state()
+    assert state["character_animation"] is True
+
+    # Start game
+    await engine.start_game(mode="manual", question_id="q1", question_count=5, answer_duration=10)
+    running_state = await engine.get_state()
+    assert running_state["phase"] == GamePhase.QUESTION.value
+    assert running_state["character_animation"] is True
+
+    # Toggle off while game is running
+    res_off = await engine.set_character_animation(False)
+    assert res_off is False
+    updated_state = await engine.get_state()
+    assert updated_state["character_animation"] is False
+
+    # Toggle on again
+    res_on = await engine.set_character_animation(True)
+    assert res_on is True
+    re_enabled_state = await engine.get_state()
+    assert re_enabled_state["character_animation"] is True
+
+    await engine.shutdown()

@@ -18,6 +18,7 @@ from app.api.schemas import (
     MusicControlRequest,
     QuestionCreateRequest,
     QuestionUpdateRequest,
+    ToggleCharacterAnimationRequest,
 )
 from app.api.websocket import ConnectionManager
 from app.core.config import APP_NAME, QUESTION_FILE
@@ -327,6 +328,15 @@ async def resume_game(request: Request) -> dict[str, Any]:
         return await get_engine(request).resume_game()
     except ValueError as error:
         raise HTTPException(status_code=400, detail=str(error)) from error
+
+
+@app.post("/api/game/character-animation", tags=["Game"])
+async def toggle_character_animation(
+    payload: ToggleCharacterAnimationRequest,
+    request: Request,
+) -> dict[str, Any]:
+    enabled = await get_engine(request).set_character_animation(payload.enabled)
+    return {"status": "ok", "character_animation": enabled}
 
 
 

@@ -514,6 +514,17 @@ function renderState(state) {
     $("questionMode").value = state.mode || "random";
     updateModeUI();
   }
+  if (state.character_animation !== undefined) {
+    const charSwitch = $("charAnimationSwitch");
+    const charBadge = $("charAnimationBadge");
+    if (charSwitch && charSwitch !== document.activeElement) {
+      charSwitch.checked = Boolean(state.character_animation);
+    }
+    if (charBadge) {
+      charBadge.textContent = state.character_animation ? "AKTIF" : "NONAKTIF";
+      charBadge.className = `badge ${state.character_animation ? "bg-purple-lt" : "bg-secondary-lt"}`;
+    }
+  }
   $("modeBadge").textContent = `${(state.mode || "random").toUpperCase()} MODE${autoPlay ? " · AUTO PLAY" : ""}${state.endless ? " · ENDLESS" : ""}`;
   renderLeaderboard(state.leaderboard || []);
 }
@@ -599,6 +610,26 @@ $("nextButton").addEventListener("click", async () => {
 $("endButton").addEventListener("click", async () => {
   try { await api("/api/game/end", "POST", {}); setNotice("Game ended."); }
   catch (error) { setNotice(error.message, "error"); }
+});
+
+$("charAnimationSwitch")?.addEventListener("change", async (e) => {
+  const enabled = e.target.checked;
+  const badge = $("charAnimationBadge");
+  if (badge) {
+    badge.textContent = enabled ? "AKTIF" : "NONAKTIF";
+    badge.className = `badge ${enabled ? "bg-purple-lt" : "bg-secondary-lt"}`;
+  }
+  try {
+    await api("/api/game/character-animation", "POST", { enabled });
+    setNotice(`Animasi karakter 3D overlay diubah ke: ${enabled ? "AKTIF" : "NONAKTIF"}`);
+  } catch (err) {
+    setNotice(`Gagal mengubah status animasi: ${err.message}`, "error");
+    e.target.checked = !enabled;
+    if (badge) {
+      badge.textContent = !enabled ? "AKTIF" : "NONAKTIF";
+      badge.className = `badge ${!enabled ? "bg-purple-lt" : "bg-secondary-lt"}`;
+    }
+  }
 });
 
 $("simulatorForm").addEventListener("submit", async (event) => {

@@ -121,35 +121,45 @@
 
       <!-- Center Popup for Fastest & Unified Round Summary + Correct Answer -->
       <div class="center-popup hidden" id="centerPopup" role="status" aria-live="polite">
-        <div class="center-popup-card" id="centerPopupCard"></div>
+        <div class="center-popup-content" id="centerPopupContent">
+          <div class="center-popup-card" id="centerPopupCard"></div>
+          <div class="popup-character-wrap hidden" id="popupCharacterWrap" aria-hidden="true">
+            <img src="/static/overlay/assets/karakter_3d_transparan.gif" class="popup-character-gif" id="popupCharacterGif" alt="Karakter 3D">
+          </div>
+        </div>
       </div>
 
       <!-- Milestone Popup: Waiting Gift to Continue Next Round -->
       <div class="milestone-popup hidden" id="milestonePopup" role="status" aria-live="polite">
-        <div class="milestone-popup-card" id="milestonePopupCard">
-          <div class="milestone-popup-icon" id="milestoneIcon">🏆</div>
-          <span class="milestone-popup-eyebrow" id="milestoneEyebrow">TARGET SOAL TERCAPAI</span>
-          <h2 class="milestone-popup-title" id="milestoneTitle">Ronde Selesai!</h2>
-          <p class="milestone-popup-desc" id="milestoneDesc">Kirim gift untuk otomatis memulai ronde berikutnya!</p>
+        <div class="milestone-popup-content" id="milestonePopupContent">
+          <div class="milestone-popup-card" id="milestonePopupCard">
+            <div class="milestone-popup-icon" id="milestoneIcon">🏆</div>
+            <span class="milestone-popup-eyebrow" id="milestoneEyebrow">TARGET SOAL TERCAPAI</span>
+            <h2 class="milestone-popup-title" id="milestoneTitle">Ronde Selesai!</h2>
+            <p class="milestone-popup-desc" id="milestoneDesc">Kirim gift untuk otomatis memulai ronde berikutnya!</p>
 
-          <div class="milestone-gift-box">
-            <div class="milestone-gift-badge">🎁 GIFT GOAL</div>
-            <div class="milestone-gift-counter">
-              <span id="milestoneGiftCollected">0</span>
-              <span class="milestone-divider">/</span>
-              <span id="milestoneGiftTarget">5</span>
-              <small>DIAMONDS</small>
+            <div class="milestone-gift-box">
+              <div class="milestone-gift-badge">🎁 GIFT GOAL</div>
+              <div class="milestone-gift-counter">
+                <span id="milestoneGiftCollected">0</span>
+                <span class="milestone-divider">/</span>
+                <span id="milestoneGiftTarget">5</span>
+                <small>DIAMONDS</small>
+              </div>
+              <div class="milestone-progress-track">
+                <div class="milestone-progress-fill" id="milestoneProgressFill" style="width: 0%;"></div>
+              </div>
+              <div class="milestone-gift-status" id="milestoneGiftStatus">
+                Terkumpul 0% · Butuh 5 diamonds lagi
+              </div>
             </div>
-            <div class="milestone-progress-track">
-              <div class="milestone-progress-fill" id="milestoneProgressFill" style="width: 0%;"></div>
-            </div>
-            <div class="milestone-gift-status" id="milestoneGiftStatus">
-              Terkumpul 0% · Butuh 5 diamonds lagi
+
+            <div class="milestone-foot-hint">
+              <span>⚡ Kirim kado apa saja di LIVE untuk membuka babak baru!</span>
             </div>
           </div>
-
-          <div class="milestone-foot-hint">
-            <span>⚡ Kirim kado apa saja di LIVE untuk membuka babak baru!</span>
+          <div class="popup-character-wrap hidden" id="milestoneCharacterWrap" aria-hidden="true">
+            <img src="/static/overlay/assets/karakter_3d_transparan.gif" class="popup-character-gif" id="milestoneCharacterGif" alt="Karakter 3D">
           </div>
         </div>
       </div>

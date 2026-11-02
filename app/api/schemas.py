@@ -24,6 +24,10 @@ class SetGiftTargetRequest(BaseModel):
     target: int = Field(default=5, ge=0, le=100000)
 
 
+class ToggleCharacterAnimationRequest(BaseModel):
+    enabled: bool
+
+
 class NextQuestionRequest(BaseModel):
     mode: Literal["random", "manual"] | None = None
     question_id: str | None = None

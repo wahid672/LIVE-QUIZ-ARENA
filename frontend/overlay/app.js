@@ -10,6 +10,7 @@ let centerPopupTimer = null;
 let activeRoundKey = null;
 let lastFastestPopupKey = null;
 let lastSummaryPopupKey = null;
+let characterAnimationEnabled = true;
 
 // ============================================================
 // AUDIO ENGINE (WEB AUDIO API SYNTHESIZER SFX)
@@ -716,22 +717,38 @@ function updateCountdown(phase, remaining, total, autoPlayRemaining) {
 
 function hideCenterPopup() {
   const popup = $("centerPopup");
+  const charWrap = $("popupCharacterWrap");
   if (!popup) return;
   popup.classList.add("hide-out");
   clearTimeout(centerPopupTimer);
   centerPopupTimer = setTimeout(() => {
     popup.classList.add("hidden");
     popup.classList.remove("hide-out", "fastest", "summary");
+    if (charWrap) charWrap.classList.add("hidden");
   }, 300);
 }
 
 function showFastestPopup(fastest) {
   const popup = $("centerPopup");
   const card = $("centerPopupCard");
+  const charWrap = $("popupCharacterWrap");
   if (!popup || !card || !fastest) return;
 
   clearTimeout(centerPopupTimer);
   card.replaceChildren();
+
+  // KARAKTER 3D TRANSPARAN DI ATAS POPUP JAWABAN TERCEPAT
+  if (charWrap) {
+    if (characterAnimationEnabled) {
+      charWrap.classList.remove("hidden");
+      const charImg = $("popupCharacterGif");
+      if (charImg && !charImg.src.includes("/static/overlay/assets/karakter_3d_transparan.gif")) {
+        charImg.src = "/static/overlay/assets/karakter_3d_transparan.gif";
+      }
+    } else {
+      charWrap.classList.add("hidden");
+    }
+  }
 
   // Mainkan SFX Kilat Penjawab Tercepat
   playPopupFastestSFX();
@@ -839,6 +856,20 @@ function showRoundSummary(summary, question) {
 
   card.append(stats, total);
 
+  // KARAKTER 3D TRANSPARAN DI BAWAH POPUP WAKTU SELESAI
+  const charWrap = $("popupCharacterWrap");
+  if (charWrap) {
+    if (characterAnimationEnabled) {
+      charWrap.classList.remove("hidden");
+      const charImg = $("popupCharacterGif");
+      if (charImg && !charImg.src.includes("/static/overlay/assets/karakter_3d_transparan.gif")) {
+        charImg.src = "/static/overlay/assets/karakter_3d_transparan.gif";
+      }
+    } else {
+      charWrap.classList.add("hidden");
+    }
+  }
+
   popup.classList.remove("hidden", "hide-out", "fastest");
   popup.classList.add("summary");
   centerPopupTimer = setTimeout(hideCenterPopup, 5200);
@@ -894,6 +925,25 @@ function render(state, live) {
   const autoAdvanceRemaining = Math.max(0, Number(state.auto_advance_remaining_seconds || 0));
 
   handleRoundPopups(state, phase, question);
+
+  // SINKRONISASI TOGGLE ANIMASI KARAKTER SECARA REALTIME
+  if (state.character_animation !== undefined) {
+    characterAnimationEnabled = Boolean(state.character_animation);
+    const charWrap = $("popupCharacterWrap");
+    const centerPopup = $("centerPopup");
+    if (charWrap && centerPopup) {
+      if (!centerPopup.classList.contains("hidden")) {
+        charWrap.classList.toggle("hidden", !characterAnimationEnabled);
+      }
+    }
+    const mCharWrap = $("milestoneCharacterWrap");
+    const mPopup = $("milestonePopup");
+    if (mCharWrap && mPopup) {
+      if (!mPopup.classList.contains("hidden")) {
+        mCharWrap.classList.toggle("hidden", !characterAnimationEnabled);
+      }
+    }
+  }
 
   const roundText = $("roundText");
   if (roundText) {
@@ -967,6 +1017,20 @@ function render(state, live) {
       const titleEl = $("milestoneTitle");
       const cardEl = $("milestonePopupCard");
 
+      // KARAKTER 3D TRANSPARAN DI BAWAH POPUP RONDE SELESAI
+      const mCharWrap = $("milestoneCharacterWrap");
+      if (mCharWrap) {
+        if (characterAnimationEnabled) {
+          mCharWrap.classList.remove("hidden");
+          const mImg = $("milestoneCharacterGif");
+          if (mImg && !mImg.src.includes("/static/overlay/assets/karakter_3d_transparan.gif")) {
+            mImg.src = "/static/overlay/assets/karakter_3d_transparan.gif";
+          }
+        } else {
+          mCharWrap.classList.add("hidden");
+        }
+      }
+
       if (wg.reached) {
         if (!lastMilestoneReached) {
           lastMilestoneReached = true;
@@ -985,6 +1049,8 @@ function render(state, live) {
       }
     } else {
       milestonePopup.classList.add("hidden");
+      const mCharWrap = $("milestoneCharacterWrap");
+      if (mCharWrap) mCharWrap.classList.add("hidden");
       lastMilestoneReached = false;
     }
   }

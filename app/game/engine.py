@@ -69,6 +69,7 @@ class QuizEngine:
         self._batch_round = 1
         self._continue_scheduled = False
         self._delayed_continue_task: asyncio.Task | None = None
+        self._character_animation = True
 
     @staticmethod
     def parse_answer(raw_answer: str) -> str | None:
@@ -518,6 +519,11 @@ class QuizEngine:
         if self._last_random_question_id == question_id:
             self._last_random_question_id = None
 
+    async def set_character_animation(self, enabled: bool) -> bool:
+        async with self._lock:
+            self._character_animation = bool(enabled)
+            return self._character_animation
+
     def _select_question_locked(
         self,
         mode: str,
@@ -764,4 +770,5 @@ class QuizEngine:
                 else None
             ),
             "leaderboard": self._leaderboard_locked(),
+            "character_animation": self._character_animation,
         }
