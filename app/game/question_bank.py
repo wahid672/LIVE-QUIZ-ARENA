@@ -1,4 +1,5 @@
 import json
+import re
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
@@ -56,7 +57,7 @@ class Question:
 
 
 class QuestionBank:
-    def __init__(self, questions: list[Question]):
+    def __init__(self, questions: list[Question], filepath: Path | None = None):
         if not questions:
             raise ValueError("Bank soal tidak boleh kosong.")
 
@@ -65,6 +66,7 @@ class QuestionBank:
             raise ValueError("ID soal harus unik.")
 
         self._questions = {question.id: question for question in questions}
+        self._filepath = filepath
 
     @classmethod
     def from_file(cls, path: Path) -> "QuestionBank":
@@ -77,7 +79,7 @@ class QuestionBank:
         if not isinstance(raw_questions, list):
             raise ValueError("Isi file bank soal harus berupa JSON array.")
 
-        return cls([Question.from_dict(item) for item in raw_questions])
+        return cls([Question.from_dict(item) for item in raw_questions], filepath=path)
 
     def get(self, question_id: str) -> Question:
         question = self._questions.get(question_id)
@@ -90,3 +92,66 @@ class QuestionBank:
 
     def admin_list(self) -> list[dict[str, Any]]:
         return [question.to_admin_dict() for question in self.all()]
+
+    def categories(self) -> list[str]:
+        return sorted(list({q.category for q in self.all()}))
+
+    def generate_next_id(self) -> str:
+        max_num = 0
+        for q_id in self._questions.keys():
+            m = re.search(r"\d+", q_id)
+            if m:
+                val = int(m.group())
+                if val > max_num:
+                    max_num = val
+        next_val = max_num + 1
+        candidate = f"q{next_val:04d}" if next_val < 10000 else f"q{next_val}"
+        while candidate in self._questions:
+            next_val += 1
+            candidate = f"q{next_val:04d}" if next_val < 10000 else f"q{next_val}"
+        return candidate
+
+    def add_question(self, raw: dict[str, Any], save: bool = True) -> Question:
+        data = dict(raw)
+        q_id = str(data.get("id") or "").strip()
+        if not q_id:
+            q_id = self.generate_next_id()
+        if q_id in self._questions:
+            raise ValueError(f"Soal dengan ID '{q_id}' sudah ada.")
+        data["id"] = q_id
+        question = Question.from_dict(data)
+        self._questions[question.id] = question
+        if save and self._filepath:
+            self.save_to_file()
+        return question
+
+    def update_question(self, question_id: str, raw: dict[str, Any], save: bool = True) -> Question:
+        if question_id not in self._questions:
+            raise ValueError(f"Soal dengan ID '{question_id}' tidak ditemukan.")
+        data = dict(raw)
+        data["id"] = question_id
+        question = Question.from_dict(data)
+        self._questions[question_id] = question
+        if save and self._filepath:
+            self.save_to_file()
+        return question
+
+    def delete_question(self, question_id: str, save: bool = True) -> None:
+        if question_id not in self._questions:
+            raise ValueError(f"Soal dengan ID '{question_id}' tidak ditemukan.")
+        if len(self._questions) <= 1:
+            raise ValueError("Bank soal minimal harus menyisakan 1 soal.")
+        del self._questions[question_id]
+        if save and self._filepath:
+            self.save_to_file()
+
+    def save_to_file(self, path: Path | None = None) -> None:
+        target = path or self._filepath
+        if not target:
+            return
+        target.parent.mkdir(parents=True, exist_ok=True)
+        temp_path = target.with_suffix(".tmp")
+        data = [q.to_admin_dict() for q in self.all()]
+        with temp_path.open("w", encoding="utf-8") as f:
+            json.dump(data, f, ensure_ascii=False, indent=2)
+        temp_path.replace(target)

@@ -63,3 +63,22 @@ class MusicControlRequest(BaseModel):
     track_key: str | None = Field(default=None, max_length=160)
     volume: int | None = Field(default=None, ge=0, le=100)
     loop: bool | None = None
+
+
+class QuestionCreateRequest(BaseModel):
+    id: str | None = Field(default=None, max_length=32)
+    category: str = Field(min_length=1, max_length=64)
+    question: str = Field(min_length=1, max_length=1000)
+    options: dict[str, str]
+    correct_answer: Literal["A", "B", "C", "D"]
+    explanation: str = Field(default="", max_length=2000)
+    hint: str = Field(default="", max_length=500)
+
+
+class QuestionUpdateRequest(BaseModel):
+    category: str = Field(min_length=1, max_length=64)
+    question: str = Field(min_length=1, max_length=1000)
+    options: dict[str, str]
+    correct_answer: Literal["A", "B", "C", "D"]
+    explanation: str = Field(default="", max_length=2000)
+    hint: str = Field(default="", max_length=500)

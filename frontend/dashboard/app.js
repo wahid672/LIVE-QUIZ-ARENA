@@ -717,7 +717,424 @@ $("musicNextButton").addEventListener("click", () => controlMusic("next"));
 $("musicLoopSwitch").addEventListener("change", () => controlMusic("loop", { loop: $("musicLoopSwitch").checked }));
 $("musicVolume").addEventListener("change", () => controlMusic("volume", { volume: Number($("musicVolume").value) }));
 
+/* ==========================================================================
+   Question Bank (Bank Soal) CRUD & Navigation
+   ========================================================================== */
+
+let currentView = "dashboard";
+const qbState = {
+  page: 1,
+  pageSize: 20,
+  search: "",
+  category: "all",
+  totalPages: 1,
+  totalItems: 0,
+  categories: [],
+  items: [],
+  deletingId: null,
+  editingId: null,
+};
+let qbSearchDebounceTimer = null;
+
+function escapeHtml(text) {
+  if (text === null || text === undefined) return "";
+  return String(text)
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#039;");
+}
+
+function switchView(viewName) {
+  currentView = viewName;
+  if (viewName === "bank-soal") {
+    $("navItemDashboard").classList.remove("active");
+    $("navItemQuestionBank").classList.add("active");
+    $("dashboardSection").classList.add("hidden");
+    $("questionBankSection").classList.remove("hidden");
+    if ($("pagePreTitle")) $("pagePreTitle").textContent = "DATABASE WORKSPACE";
+    if ($("pageMainTitle")) $("pageMainTitle").textContent = "Bank Soal";
+    loadQuestionBank(1);
+  } else {
+    $("navItemQuestionBank").classList.remove("active");
+    $("navItemDashboard").classList.add("active");
+    $("questionBankSection").classList.add("hidden");
+    $("dashboardSection").classList.remove("hidden");
+    if ($("pagePreTitle")) $("pagePreTitle").textContent = "STREAMER WORKSPACE";
+    if ($("pageMainTitle")) $("pageMainTitle").textContent = "Control room";
+  }
+}
+
+$("navLinkDashboard").addEventListener("click", (e) => {
+  e.preventDefault();
+  history.replaceState(null, "", "#dashboard");
+  switchView("dashboard");
+});
+
+$("navLinkQuestionBank").addEventListener("click", (e) => {
+  e.preventDefault();
+  history.replaceState(null, "", "#bank-soal");
+  switchView("bank-soal");
+});
+
+function showModal(modalEl) {
+  if (window.bootstrap && window.bootstrap.Modal) {
+    const m = window.bootstrap.Modal.getOrCreateInstance(modalEl);
+    m.show();
+  } else {
+    modalEl.classList.add("show");
+    modalEl.style.display = "block";
+    modalEl.setAttribute("aria-modal", "true");
+    modalEl.removeAttribute("aria-hidden");
+    let backdrop = document.querySelector(".modal-backdrop");
+    if (!backdrop) {
+      backdrop = document.createElement("div");
+      backdrop.className = "modal-backdrop fade show";
+      document.body.appendChild(backdrop);
+    }
+  }
+}
+
+function hideModal(modalEl) {
+  if (window.bootstrap && window.bootstrap.Modal) {
+    const m = window.bootstrap.Modal.getOrCreateInstance(modalEl);
+    m.hide();
+  } else {
+    modalEl.classList.remove("show");
+    modalEl.style.display = "none";
+    modalEl.removeAttribute("aria-modal");
+    modalEl.setAttribute("aria-hidden", "true");
+    const backdrop = document.querySelector(".modal-backdrop");
+    if (backdrop) backdrop.remove();
+  }
+}
+
+async function loadQuestionBank(page = qbState.page) {
+  qbState.page = page;
+  const tbody = $("qbTableBody");
+  tbody.innerHTML = `<tr><td colspan="5" class="text-center text-secondary py-4"><div class="spinner-border spinner-border-sm text-primary me-2"></div>Memuat data soal...</td></tr>`;
+
+  try {
+    const params = new URLSearchParams({
+      page: String(qbState.page),
+      page_size: String(qbState.pageSize),
+    });
+    if (qbState.search.trim()) params.append("search", qbState.search.trim());
+    if (qbState.category && qbState.category !== "all") params.append("category", qbState.category);
+
+    const res = await api(`/api/questions?${params.toString()}`);
+    qbState.items = res.items || [];
+    qbState.totalItems = res.total || 0;
+    qbState.totalPages = res.total_pages || 1;
+    qbState.page = res.page || 1;
+    qbState.categories = res.categories || [];
+
+    updateQBCategoryFilterOptions();
+    renderQBTable();
+    renderQBPagination();
+  } catch (err) {
+    tbody.innerHTML = `<tr><td colspan="5" class="text-center text-danger py-4"><i class="ti ti-alert-triangle me-1"></i>Gagal memuat soal: ${escapeHtml(err.message)}</td></tr>`;
+  }
+}
+
+function updateQBCategoryFilterOptions() {
+  const select = $("qbCategoryFilter");
+  const currentVal = select.value || "all";
+  const datalist = $("categoryDataList");
+
+  if (datalist) {
+    datalist.replaceChildren();
+    qbState.categories.forEach((cat) => {
+      const opt = document.createElement("option");
+      opt.value = cat;
+      datalist.appendChild(opt);
+    });
+  }
+
+  if (select.options.length <= 1 && qbState.categories.length > 0) {
+    select.replaceChildren();
+    const allOpt = document.createElement("option");
+    allOpt.value = "all";
+    allOpt.textContent = "Semua Kategori";
+    select.appendChild(allOpt);
+
+    qbState.categories.forEach((cat) => {
+      const opt = document.createElement("option");
+      opt.value = cat;
+      opt.textContent = cat;
+      select.appendChild(opt);
+    });
+    select.value = currentVal;
+  }
+}
+
+function renderQBTable() {
+  const tbody = $("qbTableBody");
+  if (!qbState.items.length) {
+    tbody.innerHTML = `<tr><td colspan="5" class="text-center text-secondary py-4">Tidak ada soal yang cocok dengan filter pencarian.</td></tr>`;
+    return;
+  }
+
+  tbody.innerHTML = qbState.items.map((q) => {
+    const opts = ["A", "B", "C", "D"].map((key) => {
+      const isCorrect = q.correct_answer === key;
+      const val = escapeHtml(q.options?.[key] || "");
+      return `
+        <div class="qb-opt-item ${isCorrect ? "is-correct" : ""}">
+          <span class="qb-opt-badge">${key}</span>
+          <span class="text-truncate" title="${val}">${val}</span>
+          ${isCorrect ? '<i class="ti ti-check ms-auto text-success"></i>' : ""}
+        </div>
+      `;
+    }).join("");
+
+    return `
+      <tr>
+        <td><span class="badge bg-secondary-lt fw-bold">${escapeHtml(q.id)}</span></td>
+        <td><span class="badge bg-azure-lt text-truncate" style="max-width: 140px;" title="${escapeHtml(q.category)}">${escapeHtml(q.category)}</span></td>
+        <td>
+          <div class="fw-semibold text-wrap mb-1">${escapeHtml(q.question)}</div>
+          <div class="qb-options-grid">${opts}</div>
+        </td>
+        <td>
+          ${q.explanation ? `<div class="qb-meta-text mb-1"><strong>Pembahasan:</strong> ${escapeHtml(q.explanation)}</div>` : ""}
+          ${q.hint ? `<div class="qb-meta-text text-secondary"><strong>Hint:</strong> ${escapeHtml(q.hint)}</div>` : ""}
+          ${!q.explanation && !q.hint ? '<span class="text-secondary small">—</span>' : ""}
+        </td>
+        <td class="text-center">
+          <div class="btn-group btn-group-sm">
+            <button class="btn btn-outline-secondary btn-icon" onclick="openEditQuestionModal('${escapeHtml(q.id)}')" title="Edit Soal">
+              <i class="ti ti-pencil"></i>
+            </button>
+            <button class="btn btn-outline-danger btn-icon" onclick="openDeleteConfirmModal('${escapeHtml(q.id)}')" title="Hapus Soal">
+              <i class="ti ti-trash"></i>
+            </button>
+          </div>
+        </td>
+      </tr>
+    `;
+  }).join("");
+}
+
+function renderQBPagination() {
+  const info = $("qbPaginationInfo");
+  const controls = $("qbPaginationControls");
+
+  if (qbState.totalItems === 0) {
+    info.textContent = "Menampilkan 0 dari 0 soal";
+    controls.innerHTML = "";
+    return;
+  }
+
+  const start = (qbState.page - 1) * qbState.pageSize + 1;
+  const end = Math.min(qbState.page * qbState.pageSize, qbState.totalItems);
+  info.textContent = `Menampilkan ${start} - ${end} dari ${qbState.totalItems.toLocaleString()} soal (Halaman ${qbState.page} dari ${qbState.totalPages})`;
+
+  let html = "";
+  const prevDisabled = qbState.page <= 1 ? "disabled" : "";
+  const nextDisabled = qbState.page >= qbState.totalPages ? "disabled" : "";
+
+  html += `<li class="page-item ${prevDisabled}"><a class="page-link" href="#" onclick="changeQBPage(1); return false;" title="Halaman Pertama"><i class="ti ti-chevrons-left"></i></a></li>`;
+  html += `<li class="page-item ${prevDisabled}"><a class="page-link" href="#" onclick="changeQBPage(${qbState.page - 1}); return false;" title="Sebelumnya"><i class="ti ti-chevron-left"></i></a></li>`;
+
+  const startP = Math.max(1, qbState.page - 2);
+  const endP = Math.min(qbState.totalPages, startP + 4);
+  const adjustedStartP = Math.max(1, endP - 4);
+
+  for (let p = adjustedStartP; p <= endP; p++) {
+    const active = p === qbState.page ? "active" : "";
+    html += `<li class="page-item ${active}"><a class="page-link" href="#" onclick="changeQBPage(${p}); return false;">${p}</a></li>`;
+  }
+
+  html += `<li class="page-item ${nextDisabled}"><a class="page-link" href="#" onclick="changeQBPage(${qbState.page + 1}); return false;" title="Berikutnya"><i class="ti ti-chevron-right"></i></a></li>`;
+  html += `<li class="page-item ${nextDisabled}"><a class="page-link" href="#" onclick="changeQBPage(${qbState.totalPages}); return false;" title="Halaman Terakhir"><i class="ti ti-chevrons-right"></i></a></li>`;
+
+  controls.innerHTML = html;
+}
+
+window.changeQBPage = function(page) {
+  if (page < 1 || page > qbState.totalPages || page === qbState.page) return;
+  loadQuestionBank(page);
+};
+
+window.openAddQuestionModal = function() {
+  qbState.editingId = null;
+  $("questionModalTitle").textContent = "Tambah Soal Baru";
+  $("qfId").value = "Otomatis dibuat sistem";
+  $("qfCategory").value = qbState.category !== "all" ? qbState.category : "";
+  $("qfQuestion").value = "";
+  $("qfOptionA").value = "";
+  $("qfOptionB").value = "";
+  $("qfOptionC").value = "";
+  $("qfOptionD").value = "";
+  const radios = document.getElementsByName("qfCorrectRadio");
+  radios.forEach((r) => r.checked = (r.value === "A"));
+  $("qfExplanation").value = "";
+  $("qfHint").value = "";
+  $("qfAlert").classList.add("hidden");
+  $("qfAlert").textContent = "";
+  $("qfSubmitBtn").disabled = false;
+  $("qfSubmitBtn").innerHTML = '<i class="ti ti-device-floppy me-1"></i> Simpan Soal';
+  showModal($("questionModal"));
+};
+
+window.openEditQuestionModal = async function(questionId) {
+  qbState.editingId = questionId;
+  $("questionModalTitle").textContent = `Edit Soal (${questionId})`;
+  $("qfId").value = questionId;
+  $("qfAlert").classList.add("hidden");
+  $("qfAlert").textContent = "";
+  $("qfSubmitBtn").disabled = false;
+  $("qfSubmitBtn").innerHTML = '<i class="ti ti-device-floppy me-1"></i> Perbarui Soal';
+
+  try {
+    const q = await api(`/api/questions/${questionId}`);
+    $("qfCategory").value = q.category || "";
+    $("qfQuestion").value = q.question || "";
+    $("qfOptionA").value = q.options?.A || "";
+    $("qfOptionB").value = q.options?.B || "";
+    $("qfOptionC").value = q.options?.C || "";
+    $("qfOptionD").value = q.options?.D || "";
+    const radios = document.getElementsByName("qfCorrectRadio");
+    radios.forEach((r) => r.checked = (r.value === q.correct_answer));
+    $("qfExplanation").value = q.explanation || "";
+    $("qfHint").value = q.hint || "";
+    showModal($("questionModal"));
+  } catch (err) {
+    alert(`Gagal mengambil data soal: ${err.message}`);
+  }
+};
+
+window.openDeleteConfirmModal = function(questionId) {
+  qbState.deletingId = questionId;
+  const q = qbState.items.find((item) => item.id === questionId);
+  $("delModalId").textContent = questionId;
+  $("delModalPreview").textContent = q ? q.question : "";
+  $("btnConfirmDelete").disabled = false;
+  $("btnConfirmDelete").innerHTML = '<i class="ti ti-trash me-1"></i> Hapus';
+  showModal($("deleteConfirmModal"));
+};
+
+$("btnConfirmDelete").addEventListener("click", async () => {
+  if (!qbState.deletingId) return;
+  const btn = $("btnConfirmDelete");
+  btn.disabled = true;
+  btn.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span> Menghapus...';
+
+  try {
+    await api(`/api/questions/${qbState.deletingId}`, "DELETE");
+    hideModal($("deleteConfirmModal"));
+    await loadQuestions();
+    await loadQuestionBank(qbState.items.length <= 1 && qbState.page > 1 ? qbState.page - 1 : qbState.page);
+  } catch (err) {
+    alert(`Gagal menghapus soal: ${err.message}`);
+    btn.disabled = false;
+    btn.innerHTML = '<i class="ti ti-trash me-1"></i> Hapus';
+  }
+});
+
+$("questionForm").addEventListener("submit", async (e) => {
+  e.preventDefault();
+  const alertBox = $("qfAlert");
+  alertBox.classList.add("hidden");
+  alertBox.textContent = "";
+
+  const radios = document.getElementsByName("qfCorrectRadio");
+  let selectedCorrect = "A";
+  radios.forEach((r) => { if (r.checked) selectedCorrect = r.value; });
+
+  const payload = {
+    category: $("qfCategory").value.trim(),
+    question: $("qfQuestion").value.trim(),
+    options: {
+      A: $("qfOptionA").value.trim(),
+      B: $("qfOptionB").value.trim(),
+      C: $("qfOptionC").value.trim(),
+      D: $("qfOptionD").value.trim(),
+    },
+    correct_answer: selectedCorrect,
+    explanation: $("qfExplanation").value.trim(),
+    hint: $("qfHint").value.trim(),
+  };
+
+  if (!payload.category) {
+    alertBox.textContent = "Kategori tidak boleh kosong.";
+    alertBox.classList.remove("hidden");
+    return;
+  }
+  if (!payload.question) {
+    alertBox.textContent = "Pertanyaan tidak boleh kosong.";
+    alertBox.classList.remove("hidden");
+    return;
+  }
+  if (!payload.options.A || !payload.options.B || !payload.options.C || !payload.options.D) {
+    alertBox.textContent = "Semua pilihan A, B, C, dan D harus diisi.";
+    alertBox.classList.remove("hidden");
+    return;
+  }
+
+  const submitBtn = $("qfSubmitBtn");
+  submitBtn.disabled = true;
+  submitBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span> Menyimpan...';
+
+  try {
+    if (qbState.editingId) {
+      await api(`/api/questions/${qbState.editingId}`, "PUT", payload);
+    } else {
+      await api("/api/questions", "POST", payload);
+    }
+    hideModal($("questionModal"));
+    await loadQuestions();
+    await loadQuestionBank(qbState.editingId ? qbState.page : 1);
+  } catch (err) {
+    alertBox.textContent = err.message;
+    alertBox.classList.remove("hidden");
+  } finally {
+    submitBtn.disabled = false;
+    submitBtn.innerHTML = qbState.editingId
+      ? '<i class="ti ti-device-floppy me-1"></i> Perbarui Soal'
+      : '<i class="ti ti-device-floppy me-1"></i> Simpan Soal';
+  }
+});
+
+$("btnOpenAddQuestionModal").addEventListener("click", () => openAddQuestionModal());
+
+$("qbSearchInput").addEventListener("input", (e) => {
+  clearTimeout(qbSearchDebounceTimer);
+  qbSearchDebounceTimer = setTimeout(() => {
+    qbState.search = e.target.value;
+    loadQuestionBank(1);
+  }, 300);
+});
+
+$("qbCategoryFilter").addEventListener("change", (e) => {
+  qbState.category = e.target.value;
+  loadQuestionBank(1);
+});
+
+$("qbPageSize").addEventListener("change", (e) => {
+  qbState.pageSize = Number(e.target.value) || 20;
+  loadQuestionBank(1);
+});
+
+$("qbResetFilterBtn").addEventListener("click", () => {
+  $("qbSearchInput").value = "";
+  $("qbCategoryFilter").value = "all";
+  qbState.search = "";
+  qbState.category = "all";
+  loadQuestionBank(1);
+});
+
+$("btnCloseQuestionModal")?.addEventListener("click", () => hideModal($("questionModal")));
+$("btnCancelQuestionModal")?.addEventListener("click", () => hideModal($("questionModal")));
+$("btnCloseDelModal")?.addEventListener("click", () => hideModal($("deleteConfirmModal")));
+$("btnCancelDelModal")?.addEventListener("click", () => hideModal($("deleteConfirmModal")));
+
 (async function init() {
+  if (location.hash === "#bank-soal") {
+    switchView("bank-soal");
+  }
   try {
     await loadQuestions();
     setNotice("Question bank loaded. Configure the session and start when ready.");

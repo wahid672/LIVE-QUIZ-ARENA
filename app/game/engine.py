@@ -503,6 +503,21 @@ class QuizEngine:
     def admin_questions(self) -> list[dict[str, Any]]:
         return self.question_bank.admin_list()
 
+    def add_question(self, raw: dict[str, Any]) -> Question:
+        return self.question_bank.add_question(raw)
+
+    def update_question(self, question_id: str, raw: dict[str, Any]) -> Question:
+        question = self.question_bank.update_question(question_id, raw)
+        if self._current_question and self._current_question.id == question_id:
+            self._current_question = question
+        return question
+
+    def delete_question(self, question_id: str) -> None:
+        self.question_bank.delete_question(question_id)
+        self._used_question_ids.discard(question_id)
+        if self._last_random_question_id == question_id:
+            self._last_random_question_id = None
+
     def _select_question_locked(
         self,
         mode: str,

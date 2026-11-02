@@ -16,6 +16,8 @@ from app.api.schemas import (
     MusicPlaylistAddRequest,
     MusicPlaylistRemoveRequest,
     MusicControlRequest,
+    QuestionCreateRequest,
+    QuestionUpdateRequest,
 )
 from app.api.websocket import ConnectionManager
 from app.core.config import APP_NAME, QUESTION_FILE
@@ -155,10 +157,100 @@ async def game_state(request: Request) -> dict[str, Any]:
 
 
 @app.get("/api/questions", tags=["Questions"])
-async def list_questions(request: Request) -> list[dict[str, Any]]:
+async def list_questions(
+    request: Request,
+    page: int | None = None,
+    page_size: int = 20,
+    search: str | None = None,
+    category: str | None = None,
+) -> Any:
     # Endpoint admin lokal ini menyertakan kunci jawaban. Jangan publikasikan
     # server tanpa autentikasi dan pembatasan akses.
-    return get_engine(request).admin_questions()
+    engine = get_engine(request)
+    all_questions = engine.admin_questions()
+
+    if page is None:
+        return all_questions
+
+    filtered = all_questions
+    if category and category.strip().lower() not in ("all", "semua", ""):
+        cat_lower = category.strip().lower()
+        filtered = [q for q in filtered if q.get("category", "").strip().lower() == cat_lower]
+
+    if search and search.strip():
+        s = search.strip().lower()
+        filtered = [
+            q for q in filtered
+            if s in q.get("id", "").lower()
+            or s in q.get("question", "").lower()
+            or s in q.get("explanation", "").lower()
+            or s in q.get("hint", "").lower()
+            or any(s in str(opt).lower() for opt in q.get("options", {}).values())
+        ]
+
+    total = len(filtered)
+    page_size = max(1, min(page_size, 200))
+    total_pages = max(1, (total + page_size - 1) // page_size)
+    current_page = max(1, min(page, total_pages))
+
+    start = (current_page - 1) * page_size
+    end = start + page_size
+    items = filtered[start:end]
+
+    return {
+        "items": items,
+        "total": total,
+        "page": current_page,
+        "page_size": page_size,
+        "total_pages": total_pages,
+        "categories": engine.question_bank.categories(),
+    }
+
+
+@app.get("/api/questions/{question_id}", tags=["Questions"])
+async def get_question(question_id: str, request: Request) -> dict[str, Any]:
+    try:
+        q = get_engine(request).question_bank.get(question_id)
+        return q.to_admin_dict()
+    except ValueError as error:
+        raise HTTPException(status_code=404, detail=str(error)) from error
+
+
+@app.post("/api/questions", tags=["Questions"])
+async def create_question(
+    payload: QuestionCreateRequest,
+    request: Request,
+) -> dict[str, Any]:
+    try:
+        q = get_engine(request).add_question(payload.model_dump())
+        return {"status": "created", "question": q.to_admin_dict()}
+    except ValueError as error:
+        raise HTTPException(status_code=400, detail=str(error)) from error
+
+
+@app.put("/api/questions/{question_id}", tags=["Questions"])
+async def update_question(
+    question_id: str,
+    payload: QuestionUpdateRequest,
+    request: Request,
+) -> dict[str, Any]:
+    try:
+        q = get_engine(request).update_question(question_id, payload.model_dump())
+        return {"status": "updated", "question": q.to_admin_dict()}
+    except ValueError as error:
+        raise HTTPException(status_code=400, detail=str(error)) from error
+
+
+@app.delete("/api/questions/{question_id}", tags=["Questions"])
+async def delete_question(
+    question_id: str,
+    request: Request,
+) -> dict[str, Any]:
+    try:
+        get_engine(request).delete_question(question_id)
+        return {"status": "deleted", "id": question_id}
+    except ValueError as error:
+        raise HTTPException(status_code=400, detail=str(error)) from error
 
 
 @app.post("/api/game/start", tags=["Game"])
