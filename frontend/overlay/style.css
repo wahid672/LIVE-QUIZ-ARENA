@@ -32,92 +32,7 @@ body {
 }
 
 /* ------------------------------------------------------------
-   LOCKED 9:16 SMARTPHONE CHASSIS
-   ------------------------------------------------------------ */
-.phone-shell {
-  position: relative;
-  /* Exactly locked to 9:16 aspect ratio: never overflows viewport */
-  width: min(100vw, calc(100dvh * 9 / 16));
-  height: min(100dvh, calc(100vw * 16 / 9));
-  aspect-ratio: 9 / 16;
-  display: flex;
-  flex-direction: column;
-  overflow: hidden;
-  box-sizing: border-box;
-  background: #070d18;
-  container-type: size;
-}
-
-/* When viewed on wider desktop monitors (Streamer Preview Mode) */
-@media (min-aspect-ratio: 9/16.05) {
-  .phone-shell {
-    border-radius: 38px;
-    border: 2px solid rgba(255, 255, 255, 0.12);
-    box-shadow:
-      0 0 0 8px #0b1424,
-      0 0 0 10px rgba(56, 189, 248, 0.22),
-      0 25px 70px rgba(0, 0, 0, 0.95),
-      0 0 120px rgba(14, 165, 233, 0.15);
-  }
-
-  .phone-notch {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    position: absolute;
-    top: 7px;
-    left: 50%;
-    transform: translateX(-50%);
-    width: 96px;
-    height: 18px;
-    background: #000000;
-    border-radius: 20px;
-    z-index: 50;
-    gap: 8px;
-    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.6);
-  }
-
-  .phone-speaker {
-    width: 36px;
-    height: 4px;
-    border-radius: 2px;
-    background: #1a2232;
-  }
-
-  .phone-camera {
-    width: 8px;
-    height: 8px;
-    border-radius: 50%;
-    background: radial-gradient(circle at 35% 35%, #1e3a6a, #030712);
-    border: 1px solid rgba(255, 255, 255, 0.15);
-  }
-
-  .phone-home-indicator {
-    display: block;
-    width: 34%;
-    height: 4px;
-    background: rgba(255, 255, 255, 0.25);
-    border-radius: 999px;
-    margin: 3px auto 1px;
-    flex-shrink: 0;
-  }
-}
-
-/* When inside OBS Browser Source (Exact 9:16 or Fullscreen) */
-@media (max-aspect-ratio: 9/16.05) {
-  .phone-shell {
-    border-radius: 0;
-    border: none;
-    box-shadow: none;
-  }
-
-  .phone-notch, .phone-home-indicator {
-    display: none;
-  }
-}
-
-/* ------------------------------------------------------------
-   STAGE CONTAINER
+   LOCKED 9:16 VERTICAL BROADCAST CANVAS (1080px x 1920px)
    ------------------------------------------------------------ */
 .stage {
   --gold: #f5c542;
@@ -128,23 +43,43 @@ body {
   --green-glow: rgba(16, 185, 129, 0.4);
   --red: #ef4444;
   --red-glow: rgba(239, 68, 68, 0.45);
-  --card-bg: rgba(15, 25, 44, 0.88);
-  --card-border: rgba(135, 168, 222, 0.16);
+  --card-bg: rgba(15, 25, 44, 0.9);
+  --card-border: rgba(135, 168, 222, 0.18);
 
-  width: 100%;
-  height: 100%;
+  /* Exact 9:16 aspect ratio locked up to standard 1080px x 1920px broadcast */
+  width: min(100vw, calc(100vh * 9 / 16));
+  height: min(100vh, calc(100vw * 16 / 9));
+  max-width: 1080px;
+  max-height: 1920px;
+  aspect-ratio: 9 / 16;
   display: flex;
   flex-direction: column;
-  padding: 3% 3.6% 2.2%;
-  gap: 1.3%;
+  box-sizing: border-box;
   overflow: hidden;
   position: relative;
-  box-sizing: border-box;
+  container-type: size;
+
+  /* TikTok Live Mobile Safe Area Padding */
+  /* Top Safe Area: 110px-135px on 1920px canvas to clear streamer profile avatar/pill & close button */
+  padding-top: clamp(60px, 6.8vh, 130px);
+  /* Bottom Safe Area: Clearance for TikTok comment box & bottom phone navigation */
+  padding-bottom: clamp(26px, 3vh, 55px);
+  padding-left: clamp(14px, 3.2vw, 36px);
+  padding-right: clamp(14px, 3.2vw, 36px);
+  gap: clamp(6px, 1.1vh, 14px);
 
   background:
-    radial-gradient(circle at 50% 0%, rgba(28, 78, 155, 0.4) 0%, transparent 45%),
-    radial-gradient(circle at 50% 100%, rgba(139, 92, 246, 0.12) 0%, transparent 35%),
+    radial-gradient(circle at 50% 0%, rgba(28, 78, 155, 0.45) 0%, transparent 45%),
+    radial-gradient(circle at 50% 100%, rgba(139, 92, 246, 0.15) 0%, transparent 35%),
     linear-gradient(180deg, #070e1c 0%, #050a14 100%);
+}
+
+/* When viewed in OBS Browser Source or 9:16 canvas */
+@media (aspect-ratio: 9/16) {
+  .stage {
+    width: 100%;
+    height: 100%;
+  }
 }
 
 /* Ambient esports arena background lines */
@@ -168,8 +103,8 @@ body {
   align-items: center;
   justify-content: space-between;
   gap: 10px;
-  padding: 6px 12px;
-  border-radius: 14px;
+  padding: clamp(6px, 1cqw, 14px) clamp(10px, 1.8cqw, 20px);
+  border-radius: clamp(10px, 1.8cqw, 18px);
   background: var(--card-bg);
   border: 1px solid var(--card-border);
   backdrop-filter: blur(16px);
@@ -185,7 +120,7 @@ body {
 }
 
 .brand-title {
-  font: 900 12.5px/1 'Space Grotesk', sans-serif;
+  font: 900 clamp(13px, 2.8cqw, 26px)/1 'Space Grotesk', sans-serif;
   letter-spacing: 0.06em;
   color: #ffffff;
   text-transform: uppercase;
@@ -202,14 +137,14 @@ body {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  height: 26px;
-  padding: 0 10px;
+  height: clamp(24px, 4.8cqw, 42px);
+  padding: 0 clamp(8px, 1.8cqw, 18px);
   border-radius: 999px;
   font-weight: 900;
   letter-spacing: 0.08em;
   text-transform: uppercase;
   white-space: nowrap;
-  font-size: 9px;
+  font-size: clamp(9px, 1.8cqw, 16px);
   border: 1px solid rgba(245, 197, 66, 0.4);
   background: rgba(245, 197, 66, 0.12);
   color: #f7d878;
@@ -221,9 +156,9 @@ body {
    ------------------------------------------------------------ */
 .hero-card {
   position: relative;
-  padding: 12px 14px;
-  border-radius: 18px;
-  background: linear-gradient(145deg, rgba(20, 34, 60, 0.92), rgba(12, 20, 36, 0.95));
+  padding: clamp(12px, 2.2cqw, 22px) clamp(14px, 2.6cqw, 26px);
+  border-radius: clamp(14px, 2.5cqw, 22px);
+  background: linear-gradient(145deg, rgba(20, 34, 60, 0.94), rgba(12, 20, 36, 0.97));
   border: 1px solid rgba(140, 180, 245, 0.22);
   box-shadow: 0 10px 28px rgba(0, 0, 0, 0.35);
   display: flex;
@@ -250,14 +185,14 @@ body {
 .eyebrow {
   display: inline-block;
   color: var(--gold);
-  font-size: 8.5px;
+  font-size: clamp(8.5px, 1.7cqw, 15px);
   font-weight: 900;
   letter-spacing: 0.14em;
   text-transform: uppercase;
 }
 
 .question-id {
-  font-size: 8.5px;
+  font-size: clamp(8.5px, 1.7cqw, 15px);
   font-weight: 800;
   letter-spacing: 0.1em;
   color: #7b93b8;
@@ -265,7 +200,7 @@ body {
 }
 
 .question-round {
-  font-size: 9px;
+  font-size: clamp(9px, 1.9cqw, 16px);
   font-weight: 900;
   letter-spacing: 0.12em;
   text-transform: uppercase;
@@ -274,7 +209,7 @@ body {
 
 .question-body {
   margin: 6px 0;
-  padding-right: 86px;
+  padding-right: clamp(80px, 18cqw, 130px);
   display: flex;
   align-items: center;
   flex: 1;
@@ -282,7 +217,7 @@ body {
 
 .question-text {
   margin: 0;
-  font: 800 clamp(16px, 3.8cqw, 24px)/1.2 'Space Grotesk', Inter, sans-serif;
+  font: 800 clamp(16px, 3.6cqw, 32px)/1.2 'Space Grotesk', Inter, sans-serif;
   letter-spacing: -0.015em;
   color: #ffffff;
   word-break: break-word;
@@ -299,7 +234,7 @@ body {
 }
 
 .answer-stats {
-  font-size: 9px;
+  font-size: clamp(9px, 1.8cqw, 15px);
   font-weight: 800;
   letter-spacing: 0.08em;
   text-transform: uppercase;
@@ -309,11 +244,11 @@ body {
 /* Circular Timer Float */
 .countdown-float {
   position: absolute;
-  right: 12px;
+  right: clamp(10px, 2cqw, 20px);
   top: 50%;
   transform: translateY(-50%);
-  width: clamp(72px, 18cqw, 86px);
-  height: clamp(72px, 18cqw, 86px);
+  width: clamp(72px, 16cqw, 115px);
+  height: clamp(72px, 16cqw, 115px);
   z-index: 3;
 }
 
@@ -362,7 +297,7 @@ body {
 }
 
 .countdown-label {
-  font-size: 7.5px;
+  font-size: clamp(7.5px, 1.5cqw, 13px);
   font-weight: 900;
   letter-spacing: 0.12em;
   text-transform: uppercase;
@@ -371,12 +306,12 @@ body {
 
 .countdown-value {
   margin: -2px 0 -1px;
-  font: 900 clamp(22px, 5.5cqw, 30px)/1 'Space Grotesk', sans-serif;
+  font: 900 clamp(22px, 4.8cqw, 40px)/1 'Space Grotesk', sans-serif;
   color: #ffffff;
 }
 
 .countdown-caption {
-  font-size: 7px;
+  font-size: clamp(7px, 1.4cqw, 12px);
   font-weight: 800;
   letter-spacing: 0.08em;
   color: #7b93b8;
@@ -404,34 +339,34 @@ body {
 .answers-grid {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: 8px;
+  gap: clamp(6px, 1.4cqw, 14px);
   flex-shrink: 0;
 }
 
 .answer-card {
   border: 1px solid rgba(135, 170, 230, 0.2);
-  border-radius: 14px;
+  border-radius: clamp(12px, 2cqw, 18px);
   background: linear-gradient(135deg, rgba(24, 40, 70, 0.9), rgba(16, 26, 46, 0.95));
   color: #ffffff;
-  padding: 7px 9px;
-  min-height: 56px;
+  padding: clamp(7px, 1.5cqw, 15px) clamp(9px, 1.8cqw, 18px);
+  min-height: clamp(54px, 10cqw, 85px);
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: clamp(6px, 1.4cqw, 12px);
   box-shadow: 0 6px 16px rgba(0, 0, 0, 0.22);
   transition: transform 0.2s ease, border-color 0.2s ease, background 0.2s ease;
 }
 
 .answer-badge {
-  width: 30px;
-  height: 30px;
-  flex: 0 0 30px;
-  border-radius: 8px;
+  width: clamp(28px, 5.2cqw, 46px);
+  height: clamp(28px, 5.2cqw, 46px);
+  flex: 0 0 clamp(28px, 5.2cqw, 46px);
+  border-radius: clamp(7px, 1.4cqw, 12px);
   display: grid;
   place-items: center;
   background: linear-gradient(135deg, #f5c542, #e09f12);
   color: #0b121e;
-  font: 900 15px/1 'Space Grotesk', sans-serif;
+  font: 900 clamp(14px, 2.6cqw, 24px)/1 'Space Grotesk', sans-serif;
   box-shadow: 0 3px 8px rgba(0, 0, 0, 0.3);
 }
 
@@ -444,7 +379,7 @@ body {
 }
 
 .answer-title {
-  font-size: 8px;
+  font-size: clamp(8px, 1.5cqw, 14px);
   font-weight: 800;
   letter-spacing: 0.12em;
   text-transform: uppercase;
@@ -452,7 +387,7 @@ body {
 }
 
 .answer-text {
-  font: 700 clamp(11.5px, 2.4cqw, 15px)/1.15 Inter, sans-serif;
+  font: 700 clamp(11.5px, 2.2cqw, 20px)/1.2 Inter, sans-serif;
   overflow: hidden;
   display: -webkit-box;
   -webkit-line-clamp: 2;
@@ -486,7 +421,7 @@ body {
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  min-height: 30px;
+  min-height: clamp(28px, 4.8cqw, 42px);
   flex-shrink: 0;
   position: relative;
 }
@@ -498,8 +433,8 @@ body {
   background: rgba(22, 38, 66, 0.85);
   border: 1px solid rgba(110, 160, 240, 0.35);
   border-radius: 999px;
-  padding: 5px 12px;
-  font-size: 9.5px;
+  padding: clamp(5px, 1cqw, 10px) clamp(10px, 2.2cqw, 20px);
+  font-size: clamp(9.5px, 1.9cqw, 16px);
   font-weight: 900;
   letter-spacing: 0.08em;
   color: #e0edff;
@@ -528,9 +463,9 @@ body {
 
 .board-card, .support-card {
   border: 1px solid var(--card-border);
-  border-radius: 14px;
+  border-radius: clamp(12px, 2cqw, 18px);
   background: var(--card-bg);
-  padding: 7px 8px;
+  padding: clamp(7px, 1.4cqw, 14px) clamp(8px, 1.6cqw, 16px);
   box-shadow: 0 6px 18px rgba(0, 0, 0, 0.2);
   display: flex;
   flex-direction: column;
@@ -542,25 +477,25 @@ body {
   align-items: baseline;
   justify-content: space-between;
   gap: 6px;
-  padding-bottom: 2px;
+  padding-bottom: 3px;
 }
 
 .section-title-wrap h2 {
   margin: 1px 0 0;
-  font: 900 11.5px/1.1 'Space Grotesk', sans-serif;
+  font: 900 clamp(11.5px, 2.2cqw, 20px)/1.1 'Space Grotesk', sans-serif;
   color: #ffffff;
 }
 
 .metric {
   color: #9cb2d2;
-  font: 900 9.5px/1 'Space Grotesk', sans-serif;
+  font: 900 clamp(9.5px, 1.8cqw, 16px)/1 'Space Grotesk', sans-serif;
   white-space: nowrap;
 }
 
 .leaderboard-grid, .gifter-list {
   display: flex;
   flex-direction: column;
-  gap: 3.5px;
+  gap: clamp(3px, 0.7cqw, 7px);
   margin-top: 4px;
   overflow-y: auto;
   scrollbar-width: none;
@@ -575,24 +510,24 @@ body {
 /* Compact Leaderboard Row */
 .leader-row {
   display: grid;
-  grid-template-columns: 18px minmax(0, 1fr) auto;
+  grid-template-columns: clamp(18px, 3.6cqw, 28px) minmax(0, 1fr) auto;
   align-items: center;
-  gap: 5px;
-  padding: 3.5px 5px;
+  gap: clamp(5px, 1cqw, 10px);
+  padding: clamp(3.5px, 0.8cqw, 7px) clamp(5px, 1cqw, 9px);
   border: 1px solid rgba(149, 171, 207, 0.1);
-  border-radius: 6px;
+  border-radius: clamp(6px, 1.2cqw, 10px);
   background: rgba(255, 255, 255, 0.035);
 }
 
 .rank-pill {
-  width: 18px;
-  height: 18px;
-  border-radius: 5px;
+  width: clamp(18px, 3.6cqw, 28px);
+  height: clamp(18px, 3.6cqw, 28px);
+  border-radius: clamp(5px, 1cqw, 8px);
   display: grid;
   place-items: center;
   background: rgba(245, 197, 66, 0.15);
   color: #f7d878;
-  font: 900 9.5px/1 'Space Grotesk', sans-serif;
+  font: 900 clamp(9.5px, 1.8cqw, 15px)/1 'Space Grotesk', sans-serif;
 }
 
 .leader-row:nth-child(1) .rank-pill {
@@ -612,7 +547,7 @@ body {
 }
 
 .player-name {
-  font-size: 9.5px;
+  font-size: clamp(9.5px, 1.9cqw, 17px);
   font-weight: 800;
   line-height: 1.15;
   color: #ffffff;
@@ -622,7 +557,7 @@ body {
 }
 
 .player-meta {
-  font-size: 7.5px;
+  font-size: clamp(7.5px, 1.4cqw, 13px);
   color: #8da4cb;
   font-weight: 700;
   letter-spacing: 0.02em;
@@ -630,35 +565,35 @@ body {
 
 .player-score {
   color: var(--gold);
-  font: 900 11px/1 'Space Grotesk', sans-serif;
+  font: 900 clamp(11px, 2.1cqw, 18px)/1 'Space Grotesk', sans-serif;
   white-space: nowrap;
 }
 
 /* Compact Gifter Row */
 .gifter-row {
   display: grid;
-  grid-template-columns: 17px minmax(0, 1fr) auto;
+  grid-template-columns: clamp(17px, 3.4cqw, 26px) minmax(0, 1fr) auto;
   align-items: center;
-  gap: 5px;
-  padding: 3.5px 5px;
+  gap: clamp(5px, 1cqw, 10px);
+  padding: clamp(3.5px, 0.8cqw, 7px) clamp(5px, 1cqw, 9px);
   border: 1px solid rgba(149, 171, 207, 0.1);
-  border-radius: 6px;
+  border-radius: clamp(6px, 1.2cqw, 10px);
   background: rgba(255, 255, 255, 0.035);
 }
 
 .gifter-rank {
-  width: 17px;
-  height: 17px;
-  border-radius: 4px;
+  width: clamp(17px, 3.4cqw, 26px);
+  height: clamp(17px, 3.4cqw, 26px);
+  border-radius: clamp(4px, 0.8cqw, 7px);
   display: grid;
   place-items: center;
   background: rgba(56, 189, 248, 0.16);
   color: #7dd3fc;
-  font: 900 9px/1 'Space Grotesk', sans-serif;
+  font: 900 clamp(9px, 1.7cqw, 14px)/1 'Space Grotesk', sans-serif;
 }
 
 .gifter-name {
-  font-size: 9.5px;
+  font-size: clamp(9.5px, 1.9cqw, 17px);
   font-weight: 800;
   line-height: 1.15;
   color: #ffffff;
@@ -668,39 +603,39 @@ body {
 }
 
 .gifter-meta {
-  font-size: 7.5px;
+  font-size: clamp(7.5px, 1.4cqw, 13px);
   color: #8da4cb;
   font-weight: 700;
 }
 
 .gifter-score {
   color: #38bdf8;
-  font: 900 10.5px/1 'Space Grotesk', sans-serif;
+  font: 900 clamp(10.5px, 2cqw, 17px)/1 'Space Grotesk', sans-serif;
   white-space: nowrap;
 }
 
 .empty-state {
   width: 100%;
-  padding: 8px 4px;
+  padding: clamp(8px, 1.6cqw, 16px) 4px;
   border: 1px dashed rgba(149, 171, 207, 0.16);
   border-radius: 6px;
   color: #7d93b8;
-  font-size: 9px;
+  font-size: clamp(9px, 1.8cqw, 15px);
   font-weight: 700;
   text-align: center;
 }
 
 /* ------------------------------------------------------------
-   5.1 MUSIC PILL (CURRENT PLAYING TRACK & UNMUTE BUTTON)
+   5.1 MUSIC PILL (CURRENT PLAYING TRACK)
    ------------------------------------------------------------ */
 .music-pill {
   display: flex;
   align-items: center;
-  gap: 7px;
+  gap: clamp(6px, 1.2cqw, 12px);
   background: rgba(14, 24, 44, 0.9);
   border: 1px solid rgba(130, 170, 240, 0.25);
   border-radius: 999px;
-  padding: 3px 8px 3px 6px;
+  padding: clamp(3px, 0.6cqw, 7px) clamp(8px, 1.6cqw, 16px);
   margin-top: 1px;
   flex-shrink: 0;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.25);
@@ -708,14 +643,14 @@ body {
 }
 
 .music-pill-icon {
-  width: 18px;
-  height: 18px;
+  width: clamp(18px, 3.6cqw, 28px);
+  height: clamp(18px, 3.6cqw, 28px);
   border-radius: 50%;
   display: grid;
   place-items: center;
   background: linear-gradient(135deg, #38bdf8, #0284c7);
   color: #04101e;
-  font: 900 10px/1 sans-serif;
+  font: 900 clamp(10px, 1.8cqw, 15px)/1 sans-serif;
   box-shadow: 0 0 8px rgba(56, 189, 248, 0.4);
   animation: pulse-music 1.8s infinite ease-in-out;
 }
@@ -733,7 +668,7 @@ body {
 }
 
 .music-pill-title {
-  font-size: 8.5px;
+  font-size: clamp(8.5px, 1.7cqw, 15px);
   font-weight: 800;
   color: #e2edfd;
   white-space: nowrap;
@@ -741,7 +676,6 @@ body {
   text-overflow: ellipsis;
   letter-spacing: 0.02em;
 }
-
 
 /* ------------------------------------------------------------
    6. FOOTER
@@ -752,12 +686,12 @@ body {
   gap: 8px;
   align-items: center;
   color: #5c6f8f;
-  font-size: 7.5px;
+  font-size: clamp(7.5px, 1.5cqw, 13px);
   font-weight: 800;
   letter-spacing: 0.12em;
   text-transform: uppercase;
   flex-shrink: 0;
-  padding: 2px 2px 0;
+  padding: clamp(2px, 0.4cqw, 6px) 2px 0;
 }
 
 /* ------------------------------------------------------------

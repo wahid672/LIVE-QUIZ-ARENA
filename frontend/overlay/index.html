@@ -14,17 +14,9 @@
 </head>
 <body class="notranslate" translate="no">
 
-  <!-- Locked 9:16 Mobile Viewport Frame -->
-  <div class="phone-shell">
-    
-    <!-- Phone Top Hardware Simulation (Subtle on 9:16, Bezel on Desktop) -->
-    <div class="phone-notch">
-      <div class="phone-speaker"></div>
-      <div class="phone-camera"></div>
-    </div>
-    
-    <main class="stage notranslate" translate="no" aria-label="Live Quiz Arena overlay">
-      <!-- 1. Topbar Header (Compact without logo, round subtitle, or live badge) -->
+  <!-- Fixed 9:16 Vertical Broadcast Canvas (1080px x 1920px) -->
+  <main class="stage notranslate" translate="no" aria-label="Live Quiz Arena overlay">
+    <!-- 1. Topbar Header (Compact without logo, round subtitle, or live badge) -->
       <header class="topbar">
         <div class="brandbar">
           <strong class="brand-title">LIVE QUIZ ARENA</strong>
@@ -117,9 +109,6 @@
         <span>LIVE QUIZ ARENA</span>
       </footer>
 
-      <!-- Phone Bottom Home Bar Indicator -->
-      <div class="phone-home-indicator"></div>
-
       <!-- Native HTML5 Audio Player (.mp3, .wav, .mov) -->
       <audio id="overlayAudio" preload="auto"></audio>
       <div class="gift-alert hidden" id="giftAlert" role="status" aria-live="polite">
@@ -165,7 +154,6 @@
         </div>
       </div>
     </main>
-  </div>
 
   <script src="/static/overlay/app.js"></script>
 </body>
