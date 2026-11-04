@@ -28,6 +28,10 @@ class ToggleCharacterAnimationRequest(BaseModel):
     enabled: bool
 
 
+class ThemeChangeRequest(BaseModel):
+    theme: str = Field(min_length=1, max_length=64)
+
+
 class NextQuestionRequest(BaseModel):
     mode: Literal["random", "manual"] | None = None
     question_id: str | None = None

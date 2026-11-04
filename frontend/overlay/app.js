@@ -448,31 +448,14 @@ function getAudioElement() {
 
 function updateMusicPill() {
   const pill = $("musicPill");
-  if (!pill) return;
-
-  const track = musicState?.current_track;
-  if (!track || !musicState?.is_playing) {
+  if (pill) {
     pill.classList.add("hidden");
-    return;
-  }
-
-  pill.classList.remove("hidden");
-  const titleEl = $("musicPillTitle");
-  if (titleEl) {
-    titleEl.textContent = `♫ ${track.title || "Audio Track"}`;
-    titleEl.style.color = "#e2edfd";
   }
 }
 
 function showMusicError(msg) {
-  const pill = $("musicPill");
-  if (!pill) return;
-  pill.classList.remove("hidden");
-  const titleEl = $("musicPillTitle");
-  if (titleEl) {
-    titleEl.textContent = `⚠️ ${msg}`;
-    titleEl.style.color = "#f87171";
-  }
+  // Pill musik tidak ditampilkan di overlay sesuai preferensi streamer
+  console.warn("Audio playback notice:", msg);
 }
 
 function applyAudioMusicState() {
@@ -544,6 +527,21 @@ async function fetchInitialMusicState() {
 }
 
 // ============================================================
+// MODULAR THEME SWITCHING ENGINE
+// ============================================================
+
+function applyTheme(themeId) {
+  if (!themeId) return;
+  const link = $("themeStylesheet");
+  if (!link) return;
+  const targetHref = `/static/overlay/themes/${encodeURIComponent(themeId)}/style.css`;
+  const currentHref = link.getAttribute("href") || "";
+  if (!currentHref.includes(targetHref)) {
+    link.href = targetHref;
+  }
+}
+
+// ============================================================
 // WEBSOCKET & RENDERING ENGINE
 // ============================================================
 
@@ -558,6 +556,13 @@ function connect() {
         render(message.data, message.live);
         if (message.music) {
           handleOverlayMusicState(message.music);
+        }
+        if (message.theme && !window.__LOCKED_THEME__) {
+          applyTheme(message.theme);
+        }
+      } else if (message.type === "theme_changed") {
+        if (!window.__LOCKED_THEME__ && message.theme) {
+          applyTheme(message.theme);
         }
       }
     } catch (_) {}
@@ -576,7 +581,7 @@ function renderAnswers(question, phase) {
   const options = question?.options || {};
   ["A", "B", "C", "D"].forEach((key) => {
     const card = document.createElement("div");
-    card.className = "answer-card";
+    card.className = `answer-card opt-${key.toLowerCase()}`;
     if ((phase === "reveal" || phase === "finished") && question?.correct_answer === key) {
       card.classList.add("correct");
     } else if ((phase === "reveal" || phase === "finished") && question?.correct_answer && question.correct_answer !== key) {
@@ -592,7 +597,7 @@ function renderAnswers(question, phase) {
 
     const title = document.createElement("div");
     title.className = "answer-title";
-    title.textContent = `Pilihan ${key}`;
+    title.textContent = `PILIHAN ${key}`;
 
     const text = document.createElement("div");
     text.className = "answer-text";
@@ -611,34 +616,45 @@ function renderLeaderboard(rows, playersCount) {
   const countEl = $("leaderboardCount");
   if (countEl) countEl.textContent = `${playersCount || rows?.length || 0} pemain`;
 
+  const meter = $("leaderboardMeter");
+  if (meter) {
+    const pct = Math.min(100, Math.max(0, ((rows?.length || 0) / 10) * 100));
+    meter.style.width = `${pct}%`;
+  }
+
   if (!rows || rows.length === 0) {
     const empty = document.createElement("div");
-    empty.className = "empty-state";
-    empty.textContent = "Belum ada pemain";
+    empty.className = "arcade-empty-box";
+    empty.innerHTML = `
+      <div class="empty-icon yellow-box">🏆</div>
+      <p class="empty-title">Belum ada pemain</p>
+      <span class="empty-sub text-yellow">JADILAH #1</span>
+    `;
     container.appendChild(empty);
     return;
   }
 
-  // Muat hingga 10 pemain secara rapi dan kompak
-  rows.slice(0, 10).forEach((player, index) => {
+  // Muat hingga 5 pemain secara rapi dan kompak di panel brutalist
+  rows.slice(0, 5).forEach((player, index) => {
     const row = document.createElement("div");
-    row.className = "leader-row";
+    row.className = "panel-row";
 
     const rank = document.createElement("div");
-    rank.className = "rank-pill";
-    rank.textContent = String(index + 1).padStart(2, "0");
+    rank.className = "row-rank";
+    rank.textContent = String(index + 1);
 
     const info = document.createElement("div");
+    info.className = "row-info";
     const name = document.createElement("div");
-    name.className = "player-name";
+    name.className = "row-name";
     name.textContent = player.username || "Viewer";
     const meta = document.createElement("div");
-    meta.className = "player-meta";
+    meta.className = "row-meta";
     meta.textContent = `${player.correct_answers || 0} benar`;
     info.append(name, meta);
 
     const score = document.createElement("div");
-    score.className = "player-score";
+    score.className = "row-score";
     score.textContent = player.score ?? 0;
 
     row.append(rank, info, score);
@@ -651,38 +667,49 @@ function renderSupporters(live) {
   const countEl = $("gifterCount");
   if (countEl) countEl.textContent = `${supporters.length} supporter`;
 
+  const meter = $("supportersMeter");
+  if (meter) {
+    const pct = Math.min(100, Math.max(0, (supporters.length / 5) * 100));
+    meter.style.width = `${pct}%`;
+  }
+
   const container = $("supportersList");
   if (!container) return;
   container.replaceChildren();
 
   if (!supporters.length) {
     const empty = document.createElement("div");
-    empty.className = "empty-state";
-    empty.textContent = "Belum ada gift";
+    empty.className = "arcade-empty-box";
+    empty.innerHTML = `
+      <div class="empty-icon pink-box">🎁</div>
+      <p class="empty-title">Belum ada gift</p>
+      <span class="empty-sub text-pink">KIRIM KOIN</span>
+    `;
     container.appendChild(empty);
     return;
   }
 
-  // Muat hingga 8 supporter secara rapi dan kompak
-  supporters.slice(0, 8).forEach((item) => {
+  // Muat hingga 5 supporter secara rapi dan kompak
+  supporters.slice(0, 5).forEach((item) => {
     const row = document.createElement("div");
-    row.className = "gifter-row";
+    row.className = "panel-row";
 
     const rank = document.createElement("div");
-    rank.className = "gifter-rank";
-    rank.textContent = String(item.rank).padStart(2, "0");
+    rank.className = "row-rank";
+    rank.textContent = String(item.rank);
 
     const info = document.createElement("div");
+    info.className = "row-info";
     const name = document.createElement("div");
-    name.className = "gifter-name";
+    name.className = "row-name";
     name.textContent = item.username;
     const meta = document.createElement("div");
-    meta.className = "gifter-meta";
+    meta.className = "row-meta";
     meta.textContent = `${item.gift_count} gifts`;
     info.append(name, meta);
 
     const score = document.createElement("div");
-    score.className = "gifter-score";
+    score.className = "row-score";
     score.textContent = `${Number(item.diamonds || 0).toLocaleString("id-ID")} ♦`;
 
     row.append(rank, info, score);
@@ -722,7 +749,7 @@ function updateCountdown(phase, remaining, total, autoPlayRemaining) {
   const circle = $("countdownProgress");
   if (!floatNode || !circle) return;
 
-  const radius = 50;
+  const radius = circle.r?.baseVal?.value || 41;
   const circumference = 2 * Math.PI * radius;
 
   let label = "VOTING";
@@ -1030,12 +1057,12 @@ function render(state, live) {
 
   const roundText = $("roundText");
   if (roundText) {
-    if (state.endless) {
-      roundText.textContent = `ROUND ${String(state.question_number || 0).padStart(2, "0")} / ∞`;
-    } else if (state.batch_round && state.batch_round > 1) {
-      roundText.textContent = `R${state.batch_round} · SOAL ${String(state.question_number || 0).padStart(2, "0")} / ${String(state.question_count || 0).padStart(2, "0")}`;
+    const qNum = String(state.question_number || 1).padStart(2, "0");
+    const qTotal = state.endless ? "∞" : String(state.question_count || 10).padStart(2, "0");
+    if (state.batch_round && state.batch_round > 1) {
+      roundText.innerHTML = `R${state.batch_round} · SOAL <span class="round-num">${qNum}</span> / <span class="round-total">${qTotal}</span>`;
     } else {
-      roundText.textContent = `ROUND ${String(state.question_number || 0).padStart(2, "0")} / ${String(state.question_count || 0).padStart(2, "0")}`;
+      roundText.innerHTML = `ROUND <span class="round-num">${qNum}</span> / <span class="round-total">${qTotal}</span>`;
     }
   }
 
@@ -1043,7 +1070,7 @@ function render(state, live) {
   if (categoryText) categoryText.textContent = question?.category || "GENERAL";
 
   const questionId = $("questionId");
-  if (questionId) questionId.textContent = question?.id ? `ID ${String(question.id).toUpperCase()}` : "LIVE ROUND";
+  if (questionId) questionId.textContent = question?.id ? `ID #${String(question.id).toUpperCase()}` : "LIVE ROUND";
 
   const questionText = $("questionText");
   if (questionText) {
@@ -1054,7 +1081,33 @@ function render(state, live) {
   }
 
   const answerStats = $("answerStats");
-  if (answerStats) answerStats.textContent = `${state.players_count || 0} pemain · ${state.answered_count || 0} jawaban`;
+  if (answerStats) {
+    answerStats.innerHTML = `
+      <span class="stat-pill"><svg class="stat-icon text-cyan" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 01-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" stroke-linecap="round" stroke-linejoin="round"></path></svg>${state.players_count || 0} PEMAIN</span>
+      <span class="stat-dot">•</span>
+      <span class="stat-pill"><svg class="stat-icon text-green" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" stroke-linecap="round" stroke-linejoin="round"></path></svg>${state.answered_count || 0} JAWABAN</span>
+    `;
+  }
+
+  const statusBadge = $("questionStatusBadge");
+  if (statusBadge) {
+    if (phase === "question") {
+      statusBadge.textContent = "ACTIVE";
+      statusBadge.className = "status-badge active";
+    } else if (phase === "reveal") {
+      statusBadge.textContent = "REVEAL";
+      statusBadge.className = "status-badge reveal";
+    } else if (phase === "waiting_gift") {
+      statusBadge.textContent = "GIFT GOAL";
+      statusBadge.className = "status-badge gift";
+    } else if (phase === "paused") {
+      statusBadge.textContent = "PAUSED";
+      statusBadge.className = "status-badge paused";
+    } else {
+      statusBadge.textContent = "IDLE";
+      statusBadge.className = "status-badge idle";
+    }
+  }
 
   renderAnswers(question, phase);
   renderLeaderboard(state.leaderboard || [], state.players_count || 0);
@@ -1064,19 +1117,19 @@ function render(state, live) {
   const hint = $("chatHint");
   if (hint) {
     if (phase === "question") {
-      hint.innerHTML = 'KETIK <strong>A / B / C / D</strong> DI KOMENTAR LIVE';
+      hint.innerHTML = '<span class="hint-icon">💬</span> <span class="hint-label">KETIK</span> <span class="hint-badge badge-a">A</span> <span class="hint-slash">/</span> <span class="hint-badge badge-b">B</span> <span class="hint-slash">/</span> <span class="hint-badge badge-c">C</span> <span class="hint-slash">/</span> <span class="hint-badge badge-d">D</span> <span class="hint-label">DI KOMENTAR LIVE</span>';
     } else if (phase === "reveal" && autoPlay) {
-      hint.textContent = "AUTO PLAY · SOAL BERIKUTNYA SEGERA DIMULAI";
+      hint.innerHTML = '<span class="hint-icon">⚡</span> <span class="hint-label">AUTO PLAY · SOAL BERIKUTNYA SEGERA DIMULAI</span>';
     } else if (phase === "reveal") {
-      hint.textContent = "WAKTU HABIS · HASIL RONDE";
+      hint.innerHTML = '<span class="hint-icon">⏱</span> <span class="hint-label">WAKTU HABIS · HASIL RONDE</span>';
     } else if (phase === "waiting_gift") {
-      hint.innerHTML = '🎁 <strong>KIRIM GIFT</strong> UNTUK MEMULAI RONDE BERIKUTNYA!';
+      hint.innerHTML = '<span class="hint-icon">🎁</span> <span class="hint-label">KIRIM GIFT UNTUK MEMULAI RONDE BERIKUTNYA!</span>';
     } else if (phase === "paused") {
-      hint.textContent = "PERMAINAN DIJEDA OLEH STREAMER";
+      hint.innerHTML = '<span class="hint-icon">⏸</span> <span class="hint-label">PERMAINAN DIJEDA OLEH STREAMER</span>';
     } else if (phase === "finished") {
-      hint.textContent = "SESI KUIS TELAH SELESAI";
+      hint.innerHTML = '<span class="hint-icon">🏁</span> <span class="hint-label">SESI KUIS TELAH SELESAI</span>';
     } else {
-      hint.textContent = "PLAY TOGETHER · WIN TOGETHER";
+      hint.innerHTML = '<span class="hint-icon">⚡</span> <span class="hint-label">PLAY TOGETHER · WIN TOGETHER</span>';
     }
   }
 

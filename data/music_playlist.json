@@ -1,7 +1,15 @@
 {
-  "queue": [],
-  "current_index": -1,
-  "volume": 75,
+  "queue": [
+    {
+      "track_key": "audio:bd2943a31281",
+      "kind": "mp3",
+      "url": "https://oneshare.lovable.app/tanpa-iklan-full-30-menit-lagu-viral-ter-hs7yx2.mp3",
+      "title": "Tanpa Iklan Full 30 Menit Lagu Viral Ter Hs7Yx2",
+      "extension": ".mp3"
+    }
+  ],
+  "current_index": 0,
+  "volume": 10,
   "loop": true,
-  "play_generation": 0
+  "play_generation": 2
 }

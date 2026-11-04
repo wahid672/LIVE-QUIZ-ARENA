@@ -50,6 +50,9 @@ function connectSocket() {
       if (message.live) renderLiveState(message.live);
       if (message.connection) renderTikTokConnection(message.connection);
       if (message.music) renderMusicState(message.music);
+      if (message.theme) updateActiveThemeUI(message.theme);
+    } else if (message.type === "theme_changed") {
+      if (message.theme) updateActiveThemeUI(message.theme);
     }
   };
   socket.onclose = () => {
@@ -656,6 +659,154 @@ $("btnResetQuestionHistory")?.addEventListener("click", async () => {
   }
 });
 
+// ============================================================
+// THEME MANAGEMENT ENGINE
+// ============================================================
+
+let currentThemesList = [];
+let currentActiveThemeId = "tema1";
+
+async function loadThemes() {
+  try {
+    const data = await api("/api/themes");
+    currentThemesList = data.themes || [];
+    currentActiveThemeId = data.active_theme || "tema1";
+    renderThemes(currentThemesList, currentActiveThemeId);
+  } catch (error) {
+    const grid = $("themesGrid");
+    if (grid) grid.innerHTML = `<div class="col-12 text-danger small">Gagal memuat tema: ${error.message}</div>`;
+  }
+}
+
+function updateActiveThemeUI(activeThemeId) {
+  currentActiveThemeId = activeThemeId;
+  renderThemes(currentThemesList, currentActiveThemeId);
+}
+
+function renderThemes(themes, activeThemeId) {
+  const grid = $("themesGrid");
+  if (!grid || !Array.isArray(themes)) return;
+  grid.replaceChildren();
+
+  const matched = themes.find((t) => t.id === activeThemeId);
+  const badge = $("activeThemeBadge");
+  if (badge) {
+    badge.textContent = matched ? matched.name.toUpperCase() : activeThemeId.toUpperCase();
+  }
+
+  themes.forEach((theme) => {
+    const col = document.createElement("div");
+    col.className = "col-sm-6 col-xl-3";
+
+    const isActive = theme.id === activeThemeId;
+    const accentColor = theme.accent || "#38bdf8";
+    const bgColor = theme.bg || "#070e1c";
+
+    const card = document.createElement("div");
+    card.className = `theme-card-item ${isActive ? "active" : ""}`;
+    card.style.setProperty("--theme-accent", accentColor);
+
+    // Header palette
+    const palette = document.createElement("div");
+    palette.className = "theme-preview-palette";
+    palette.style.background = bgColor;
+
+    const dot1 = document.createElement("span");
+    dot1.className = "theme-dot";
+    dot1.style.background = accentColor;
+    dot1.style.boxShadow = `0 0 8px ${accentColor}`;
+
+    const dot2 = document.createElement("span");
+    dot2.className = "theme-dot";
+    dot2.style.background = "rgba(255, 255, 255, 0.4)";
+
+    const badgeSpan = document.createElement("span");
+    badgeSpan.className = "badge ms-auto";
+    badgeSpan.style.fontSize = "9px";
+    badgeSpan.style.background = isActive ? accentColor : "rgba(255,255,255,0.08)";
+    badgeSpan.style.color = isActive ? "#000" : "#fff";
+    badgeSpan.textContent = isActive ? "AKTIF" : (theme.badge || "THEME");
+
+    palette.append(dot1, dot2, badgeSpan);
+
+    const name = document.createElement("div");
+    name.className = "theme-name text-truncate";
+    name.textContent = theme.name || theme.id;
+
+    const tagline = document.createElement("div");
+    tagline.className = "theme-tagline text-truncate";
+    tagline.textContent = theme.tagline || "";
+
+    const desc = document.createElement("div");
+    desc.className = "theme-desc";
+    desc.textContent = theme.description || "";
+
+    const actions = document.createElement("div");
+    actions.className = "d-flex flex-column gap-2 mt-auto";
+
+    // Tombol Pilih / Terapkan
+    const applyBtn = document.createElement("button");
+    applyBtn.className = `btn btn-sm ${isActive ? "btn-outline-success disabled" : "btn-primary"} w-100`;
+    applyBtn.innerHTML = isActive
+      ? '<i class="ti ti-check me-1"></i> Sedang Digunakan'
+      : '<i class="ti ti-check me-1"></i> Terapkan Tema Ini';
+    if (!isActive) {
+      applyBtn.addEventListener("click", async () => {
+        try {
+          applyBtn.disabled = true;
+          applyBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span> Mengaktifkan...';
+          await api("/api/themes/active", "POST", { theme: theme.id });
+          updateActiveThemeUI(theme.id);
+          setNotice(`Tema overlay berhasil diubah ke: ${theme.name}!`);
+        } catch (err) {
+          setNotice(`Gagal mengubah tema: ${err.message}`, "error");
+          applyBtn.disabled = false;
+          applyBtn.innerHTML = '<i class="ti ti-check me-1"></i> Terapkan Tema Ini';
+        }
+      });
+    }
+
+    // Tombol OBS & Pratinjau
+    const btnRow = document.createElement("div");
+    btnRow.className = "d-flex gap-1";
+
+    const previewBtn = document.createElement("a");
+    previewBtn.className = "btn btn-outline-secondary btn-sm flex-fill";
+    previewBtn.href = `/overlay?theme=${encodeURIComponent(theme.id)}`;
+    previewBtn.target = "_blank";
+    previewBtn.title = "Buka Pratinjau";
+    previewBtn.innerHTML = '<i class="ti ti-eye me-1"></i> Pratinjau';
+
+    const copyBtn = document.createElement("button");
+    copyBtn.className = "btn btn-outline-secondary btn-sm flex-fill";
+    copyBtn.type = "button";
+    copyBtn.title = "Salin URL OBS";
+    copyBtn.innerHTML = '<i class="ti ti-copy me-1"></i> Salin URL';
+    copyBtn.addEventListener("click", () => {
+      const fullUrl = `${location.origin}/overlay?theme=${encodeURIComponent(theme.id)}`;
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(fullUrl).then(() => {
+          copyBtn.innerHTML = '<i class="ti ti-check me-1 text-success"></i> Tersalin!';
+          setTimeout(() => {
+            copyBtn.innerHTML = '<i class="ti ti-copy me-1"></i> Salin URL';
+          }, 2000);
+        }).catch(() => {
+          prompt("Salin Link Browser Source OBS:", fullUrl);
+        });
+      } else {
+        prompt("Salin Link Browser Source OBS:", fullUrl);
+      }
+    });
+
+    btnRow.append(previewBtn, copyBtn);
+    actions.append(applyBtn, btnRow);
+
+    card.append(palette, name, tagline, desc, actions);
+    col.appendChild(card);
+    grid.appendChild(col);
+  });
+}
+
 $("simulatorForm").addEventListener("submit", async (event) => {
   event.preventDefault();
   try {
@@ -1198,6 +1349,7 @@ $("btnCancelDelModal")?.addEventListener("click", () => hideModal($("deleteConfi
   }
   connectSocket();
   updateEventSimulatorFields();
+  await loadThemes();
   try {
     renderMusicState(await api("/api/music/state"));
   } catch (error) {

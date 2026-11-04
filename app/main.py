@@ -19,9 +19,11 @@ from app.api.schemas import (
     QuestionCreateRequest,
     QuestionUpdateRequest,
     ToggleCharacterAnimationRequest,
+    ThemeChangeRequest,
 )
 from app.api.websocket import ConnectionManager
 from app.core.config import APP_NAME, QUESTION_FILE
+from app.core.themes import get_available_themes, get_active_theme, set_active_theme
 from app.game.engine import QuizEngine
 from app.game.question_bank import QuestionBank
 from app.live.interaction_manager import LiveInteractionManager
@@ -42,12 +44,14 @@ async def _state_broadcaster(app: FastAPI) -> None:
             live_state = await app.state.interactions.get_state()
             connection_state = await app.state.tiktok.get_status()
             music_state = await app.state.music.get_state()
+            active_theme = get_active_theme()
             await app.state.connections.broadcast({
                 "type": "game_state",
                 "data": state,
                 "live": live_state,
                 "connection": connection_state,
                 "music": music_state,
+                "theme": active_theme,
             })
         except asyncio.CancelledError:
             raise
@@ -122,6 +126,11 @@ async def overlay() -> FileResponse:
     return FileResponse(OVERLAY_DIR / "index.html")
 
 
+@app.get("/overlay/{theme_id}", include_in_schema=False)
+async def overlay_themed(theme_id: str) -> FileResponse:
+    return FileResponse(OVERLAY_DIR / "index.html")
+
+
 @app.get("/health", tags=["General"])
 async def health() -> dict[str, str]:
     return {"status": "ok"}
@@ -141,10 +150,11 @@ async def websocket_endpoint(websocket: WebSocket):
         live_state = await websocket.app.state.interactions.get_state()
         connection_state = await websocket.app.state.tiktok.get_status()
         music_state = await websocket.app.state.music.get_state()
+        active_theme = get_active_theme()
         await websocket.send_json({
             "type": "game_state", "data": state,
             "live": live_state, "connection": connection_state,
-            "music": music_state,
+            "music": music_state, "theme": active_theme,
         })
         # Client tidak perlu mengirim data; menunggu disconnect menjaga koneksi hidup.
         while True:
@@ -440,3 +450,28 @@ async def music_control(
 @app.post("/api/game/end", tags=["Game"])
 async def end_game(request: Request) -> dict[str, Any]:
     return await get_engine(request).end_game()
+
+
+@app.get("/api/themes", tags=["Themes"])
+async def list_themes() -> dict[str, Any]:
+    return {
+        "active_theme": get_active_theme(),
+        "themes": get_available_themes(),
+    }
+
+
+@app.post("/api/themes/active", tags=["Themes"])
+async def change_active_theme(payload: ThemeChangeRequest, request: Request) -> dict[str, Any]:
+    try:
+        new_theme = set_active_theme(payload.theme)
+        await request.app.state.connections.broadcast({
+            "type": "theme_changed",
+            "theme": new_theme,
+        })
+        return {
+            "status": "ok",
+            "active_theme": new_theme,
+            "message": f"Tema aktif berhasil diubah menjadi {new_theme}",
+        }
+    except ValueError as error:
+        raise HTTPException(status_code=400, detail=str(error)) from error

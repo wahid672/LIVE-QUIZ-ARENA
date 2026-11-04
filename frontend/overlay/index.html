@@ -3,55 +3,88 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, maximum-scale=1, user-scalable=no">
-  <meta name="theme-color" content="#060b14">
+  <meta name="theme-color" content="#05040d">
   <meta name="color-scheme" content="dark">
   <meta name="google" content="notranslate">
-  <title>LIVE QUIZ ARENA — Vertical Overlay 9:16</title>
+  <title>LIVE QUIZ ARENA — Mobile Stream Overlay 9:16</title>
+  <!-- Google Fonts: Space Grotesk, Outfit & JetBrains Mono -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=Space+Grotesk:wght@600;700;800;900&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="/static/overlay/style.css">
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@700;800&family=Outfit:wght@700;800;900&family=Space+Grotesk:wght@600;700;800;900&family=Inter:wght@400;600;700;900&display=swap" rel="stylesheet">
+  <link rel="stylesheet" id="themeStylesheet" href="/static/overlay/themes/tema1/style.css">
+  <script>
+    (function () {
+      try {
+        var params = new URLSearchParams(window.location.search);
+        var theme = params.get('theme');
+        if (!theme) {
+          var match = window.location.pathname.match(/\/overlay\/([a-zA-Z0-9_-]+)/);
+          if (match && match[1]) {
+            theme = match[1];
+          }
+        }
+        if (theme) {
+          window.__LOCKED_THEME__ = theme;
+          var link = document.getElementById('themeStylesheet');
+          if (link) {
+            link.href = '/static/overlay/themes/' + encodeURIComponent(theme) + '/style.css';
+          }
+        }
+      } catch (err) {
+        console.warn('Theme pre-init warning:', err);
+      }
+    })();
+  </script>
 </head>
 <body class="notranslate" translate="no">
 
   <!-- Fixed 9:16 Vertical Broadcast Canvas (1080px x 1920px) -->
   <main class="stage notranslate" translate="no" aria-label="Live Quiz Arena overlay">
-    <!-- 1. Topbar Header (Compact without logo, round subtitle, or live badge) -->
+
+    <!-- Neo-Brutalist Pop Halos & Halftone Ambience -->
+    <div class="neo-halo halo-pink" aria-hidden="true"></div>
+    <div class="neo-halo halo-cyan" aria-hidden="true"></div>
+    <div class="neo-halo halo-yellow" aria-hidden="true"></div>
+
+    <div class="stage-content">
+
+      <!-- 1. TopBar Header -->
       <header class="topbar">
         <div class="brandbar">
-          <strong class="brand-title">LIVE QUIZ ARENA</strong>
+          <h1 class="brand-title">LIVE QUIZ ARENA</h1>
         </div>
         <div class="topbar-meta">
-          <span class="category-pill" id="categoryText">GENERAL</span>
+          <div class="subject-chip">
+            <span class="subject-dot"></span>
+            <span class="subject-name" id="categoryText">GENERAL</span>
+          </div>
         </div>
       </header>
 
       <!-- 2. Hero Question Card with Integrated Countdown -->
-      <section class="hero-card">
+      <section class="hero-card" id="heroCard">
+        <!-- Card Sub-header: Meta & Round Tracker -->
         <div class="hero-header">
           <div class="hero-meta-left">
             <span class="eyebrow">PERTANYAAN</span>
-            <span class="question-id" id="questionId">LIVE ROUND</span>
+            <span class="question-id" id="questionId">ID #LIVE</span>
           </div>
           <div class="hero-meta-right">
-            <span class="question-round" id="roundText">ROUND 00 / 00</span>
+            <div class="question-round" id="roundText">ROUND <span class="round-num">01</span> / <span class="round-total">∞</span></div>
           </div>
         </div>
 
-        <div class="question-body">
-          <h1 class="question-text" id="questionText">Menunggu streamer memulai kuis...</h1>
-        </div>
+        <!-- Question Body & Circular Timer Row -->
+        <div class="question-main-row">
+          <div class="question-body">
+            <h2 class="question-text" id="questionText">Menunggu streamer memulai kuis...</h2>
+          </div>
 
-        <div class="question-foot">
-          <span class="answer-stats" id="answerStats">0 pemain · 0 jawaban</span>
-        </div>
-
-        <!-- Circular Countdown Timer -->
-        <div class="countdown-float" id="countdownFloat">
-          <div class="countdown-ring">
-            <svg viewBox="0 0 120 120" aria-hidden="true">
-              <circle class="countdown-track" cx="60" cy="60" r="50"></circle>
-              <circle class="countdown-progress" id="countdownProgress" cx="60" cy="60" r="50"></circle>
+          <!-- Dynamic Circular Countdown Timer (Neo-Brutalist Arcade Pop Style) -->
+          <div class="countdown-float" id="countdownFloat">
+            <svg class="countdown-svg" viewBox="0 0 100 100" aria-hidden="true">
+              <circle class="countdown-track" cx="50" cy="50" r="41" fill="none" stroke="#25214d" stroke-width="6"></circle>
+              <circle class="countdown-progress timer-ring-arcade" id="countdownProgress" cx="50" cy="50" r="41" fill="none" stroke="currentColor" stroke-linecap="round" stroke-width="6"></circle>
             </svg>
             <div class="countdown-core">
               <span class="countdown-label" id="timerLabel">VOTING</span>
@@ -60,110 +93,130 @@
             </div>
           </div>
         </div>
+
+        <!-- Live Participant Stats & Status Badge -->
+        <div class="question-foot">
+          <div class="answer-stats" id="answerStats">
+            <span class="stat-pill"><svg class="stat-icon text-cyan" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 01-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" stroke-linecap="round" stroke-linejoin="round"></path></svg>0 PEMAIN</span>
+            <span class="stat-dot">•</span>
+            <span class="stat-pill"><svg class="stat-icon text-green" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" stroke-linecap="round" stroke-linejoin="round"></path></svg>0 JAWABAN</span>
+          </div>
+          <div class="status-badge active" id="questionStatusBadge">ACTIVE</div>
+        </div>
       </section>
 
-      <!-- 3. Answers Grid (4 Cards A, B, C, D) -->
+      <!-- 3. Multiple Choice Options (Arcade Pop Neo-Brutalist Blocks) -->
       <section class="answers-grid" id="answersGrid" aria-label="Pilihan Jawaban"></section>
 
-      <!-- 4. Dynamic Action Strip (Instruction only, reveal is combined into popup) -->
-      <div class="interaction-strip">
-        <div class="status-line" id="chatHint">KETIK A / B / C / D DI KOMENTAR LIVE</div>
+      <!-- 4. Call to Action Banner (Arcade Pop Marquee Strip) -->
+      <div class="cta-banner" id="chatHint" role="status">
+        <span class="hint-icon">💬</span>
+        <span class="hint-label">KETIK</span>
+        <span class="hint-badge badge-a">A</span>
+        <span class="hint-slash">/</span>
+        <span class="hint-badge badge-b">B</span>
+        <span class="hint-slash">/</span>
+        <span class="hint-badge badge-c">C</span>
+        <span class="hint-slash">/</span>
+        <span class="hint-badge badge-d">D</span>
+        <span class="hint-label">DI KOMENTAR LIVE</span>
       </div>
 
-      <!-- 5. Arena Bottom Boards (Moved up with Viewer Power removed) -->
-      <div class="bottom-boards">
-        <section class="board-card">
-          <div class="section-top">
-            <div class="section-title-wrap">
-              <span class="eyebrow">TOP PLAYERS</span>
-              <h2>Leaderboard</h2>
+      <!-- 5. Live Stats Panels (Brutalist Arcade Split Boxes) -->
+      <section class="live-stats-panels">
+        <!-- Panel 1: Top Players Leaderboard -->
+        <article class="stats-panel leaderboard-panel" id="leaderboardCard">
+          <div class="panel-header">
+            <div class="panel-meta-row">
+              <span class="panel-badge badge-yellow">TOP PLAYERS</span>
+              <span class="panel-metric" id="leaderboardCount">0 pemain</span>
             </div>
-            <strong class="metric" id="leaderboardCount">0 pemain</strong>
+            <h3 class="panel-title">Leaderboard</h3>
           </div>
-          <div class="leaderboard-grid" id="leaderboard"></div>
-        </section>
+          <div class="panel-content" id="leaderboard"></div>
+          <div class="arcade-meter-row">
+            <div class="arcade-meter-track">
+              <div class="arcade-meter-fill fill-yellow" id="leaderboardMeter" style="width: 0%;"></div>
+            </div>
+            <span class="arcade-meter-label">LVL1</span>
+          </div>
+        </article>
 
-        <section class="support-card">
-          <div class="section-top">
-            <div class="section-title-wrap">
-              <span class="eyebrow">SUPPORTERS</span>
-              <h2>Top Gifters</h2>
+        <!-- Panel 2: Top Gifters Supporters -->
+        <article class="stats-panel supporters-panel" id="supportersCard">
+          <div class="panel-header">
+            <div class="panel-meta-row">
+              <span class="panel-badge badge-pink">SUPPORTERS</span>
+              <span class="panel-metric" id="gifterCount">0 supporter</span>
             </div>
-            <strong class="metric" id="gifterCount">0 supporter</strong>
+            <h3 class="panel-title">Top Gifters</h3>
           </div>
-          <div class="gifter-list" id="supportersList"></div>
-        </section>
+          <div class="panel-content" id="supportersList"></div>
+          <div class="arcade-meter-row">
+            <div class="arcade-meter-track">
+              <div class="arcade-meter-fill fill-pink" id="supportersMeter" style="width: 0%;"></div>
+            </div>
+            <span class="arcade-meter-label">BOOST</span>
+          </div>
+        </article>
+      </section>
+
+    </div>
+
+    <!-- Background Audio Element (Hidden, Silent UI) -->
+    <audio id="overlayAudio" preload="auto"></audio>
+
+    <!-- Gift Alert Banner -->
+    <div class="gift-alert hidden" id="giftAlert" role="status" aria-live="polite">
+      <div class="gift-icon">🎁</div>
+      <div class="gift-copy">
+        <span>GIFT ALERT</span>
+        <strong id="giftAlertText">A viewer sent a gift</strong>
       </div>
+    </div>
 
-      <!-- Music Pill (Display Only Indicator) -->
-      <div class="music-pill hidden" id="musicPill" role="status">
-        <div class="music-pill-icon" id="musicPillIcon">♫</div>
-        <div class="music-pill-info">
-          <span class="music-pill-title" id="musicPillTitle">Memuat Musik...</span>
+    <!-- Center Popup for Fastest & Unified Round Summary + Correct Answer -->
+    <div class="center-popup hidden" id="centerPopup" role="status" aria-live="polite">
+      <div class="center-popup-content" id="centerPopupContent">
+        <div class="center-popup-card" id="centerPopupCard"></div>
+        <div class="popup-character-wrap hidden" id="popupCharacterWrap" aria-hidden="true">
+          <img src="/static/overlay/assets/karakter_3d_transparan.gif" class="popup-character-gif" id="popupCharacterGif" alt="Karakter 3D">
         </div>
       </div>
+    </div>
 
-      <!-- Footer -->
-      <footer class="overlay-footer">
-        <span>⚡ PLAY TOGETHER · WIN TOGETHER</span>
-        <span>LIVE QUIZ ARENA</span>
-      </footer>
+    <!-- Milestone Popup: Waiting Gift to Continue Next Round -->
+    <div class="milestone-popup hidden" id="milestonePopup" role="status" aria-live="polite">
+      <div class="milestone-popup-content" id="milestonePopupContent">
+        <div class="milestone-popup-card" id="milestonePopupCard">
+          <div class="milestone-popup-icon" id="milestoneIcon">🏆</div>
+          <span class="milestone-popup-eyebrow" id="milestoneEyebrow">TARGET SOAL TERCAPAI</span>
+          <h2 class="milestone-popup-title" id="milestoneTitle">Ronde Selesai!</h2>
+          <p class="milestone-popup-desc" id="milestoneDesc">Kirim gift untuk otomatis memulai ronde berikutnya!</p>
 
-      <!-- Native HTML5 Audio Player (.mp3, .wav, .mov) -->
-      <audio id="overlayAudio" preload="auto"></audio>
-      <div class="gift-alert hidden" id="giftAlert" role="status" aria-live="polite">
-        <div class="gift-icon">🎁</div>
-        <div class="gift-copy">
-          <span>GIFT ALERT</span>
-          <strong id="giftAlertText">A viewer sent a gift</strong>
-        </div>
-      </div>
-
-      <!-- Center Popup for Fastest & Unified Round Summary + Correct Answer -->
-      <div class="center-popup hidden" id="centerPopup" role="status" aria-live="polite">
-        <div class="center-popup-content" id="centerPopupContent">
-          <div class="center-popup-card" id="centerPopupCard"></div>
-          <div class="popup-character-wrap hidden" id="popupCharacterWrap" aria-hidden="true">
-            <img src="/static/overlay/assets/karakter_3d_transparan.gif" class="popup-character-gif" id="popupCharacterGif" alt="Karakter 3D">
-          </div>
-        </div>
-      </div>
-
-      <!-- Milestone Popup: Waiting Gift to Continue Next Round -->
-      <div class="milestone-popup hidden" id="milestonePopup" role="status" aria-live="polite">
-        <div class="milestone-popup-content" id="milestonePopupContent">
-          <div class="milestone-popup-card" id="milestonePopupCard">
-            <div class="milestone-popup-icon" id="milestoneIcon">🏆</div>
-            <span class="milestone-popup-eyebrow" id="milestoneEyebrow">TARGET SOAL TERCAPAI</span>
-            <h2 class="milestone-popup-title" id="milestoneTitle">Ronde Selesai!</h2>
-            <p class="milestone-popup-desc" id="milestoneDesc">Kirim gift untuk otomatis memulai ronde berikutnya!</p>
-
-            <div class="milestone-gift-box">
-              <div class="milestone-gift-badge">🎁 GIFT GOAL</div>
-              <div class="milestone-gift-counter">
-                <span id="milestoneGiftCollected">0</span>
-                <span class="milestone-divider">/</span>
-                <span id="milestoneGiftTarget">5</span>
-                <small>DIAMONDS</small>
-              </div>
-              <div class="milestone-progress-track">
-                <div class="milestone-progress-fill" id="milestoneProgressFill" style="width: 0%;"></div>
-              </div>
-              <div class="milestone-gift-status" id="milestoneGiftStatus">
-                Terkumpul 0% · Butuh 5 diamonds lagi
-              </div>
+          <div class="milestone-gift-box">
+            <div class="milestone-gift-badge">🎁 GIFT GOAL</div>
+            <div class="milestone-gift-counter">
+              <span id="milestoneGiftCollected">0</span>
+              <span class="milestone-divider">/</span>
+              <span id="milestoneGiftTarget">5</span>
+              <small>DIAMONDS</small>
             </div>
-
-            <div class="milestone-foot-hint">
-              <span>⚡ Kirim kado apa saja di LIVE untuk membuka babak baru!</span>
+            <div class="milestone-progress-track">
+              <div class="milestone-progress-fill" id="milestoneProgressFill" style="width: 0%;"></div>
             </div>
+            <span class="milestone-gift-status" id="milestoneGiftStatus">Terkumpul 0%</span>
           </div>
-          <div class="popup-character-wrap hidden" id="milestoneCharacterWrap" aria-hidden="true">
-            <img src="/static/overlay/assets/karakter_3d_transparan.gif" class="popup-character-gif" id="milestoneCharacterGif" alt="Karakter 3D">
-          </div>
+
+          <div class="milestone-foot-hint">Target tercapai = otomatis lanjut soal baru</div>
+        </div>
+        <div class="popup-character-wrap hidden" id="milestoneCharacterWrap" aria-hidden="true">
+          <img src="/static/overlay/assets/karakter_3d_transparan.gif" class="popup-character-gif" id="milestoneCharacterGif" alt="Karakter 3D">
         </div>
       </div>
-    </main>
+    </div>
+
+  </main>
 
   <script src="/static/overlay/app.js"></script>
 </body>
