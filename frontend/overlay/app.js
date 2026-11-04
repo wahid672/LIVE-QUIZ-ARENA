@@ -283,12 +283,23 @@ function playMilestoneFanfareSFX() {
 // ============================================================
 
 // ============================================================
-// STABLE HIGH-PERFORMANCE TTS ENGINE (LONG RUN 3+ HOURS PROOF)
+// STABLE HIGH-PERFORMANCE TTS ENGINE (LOCKED INDONESIA & NATURAL AUDIO)
 // ============================================================
 
+let ttsMode = "locked_id";
 let activeUtterance = null;
 let ttsWatchdogTimer = null;
 let ttsVoiceCache = null;
+let ttsAudioPlayer = null;
+
+function getTtsAudioPlayer() {
+  if (!ttsAudioPlayer) {
+    ttsAudioPlayer = new Audio();
+    ttsAudioPlayer.id = "overlayTtsAudio";
+    ttsAudioPlayer.preload = "auto";
+  }
+  return ttsAudioPlayer;
+}
 
 function cleanQuestionTextForSpeech(text) {
   if (!text) return "";
@@ -332,6 +343,12 @@ function clearTTSWatchdog() {
 
 function stopSpeech() {
   clearTTSWatchdog();
+  if (ttsAudioPlayer) {
+    try {
+      ttsAudioPlayer.pause();
+      ttsAudioPlayer.currentTime = 0;
+    } catch (_) {}
+  }
   if (!('speechSynthesis' in window)) return;
   try {
     window.speechSynthesis.cancel();
@@ -340,7 +357,7 @@ function stopSpeech() {
 }
 
 function speakQuestion(question) {
-  if (!('speechSynthesis' in window) || typeof SpeechSynthesisUtterance === 'undefined') return;
+  if (ttsMode === "disabled") return;
   if (!question || !question.question) return;
   if (question.id && question.id === lastSpokenQuestionId) return;
 
@@ -348,62 +365,93 @@ function speakQuestion(question) {
   const spokenText = cleanQuestionTextForSpeech(question.question);
   if (!spokenText) return;
 
-  // Hentikan utterance sebelumnya dan beri jeda tick untuk audio pipeline browser
+  // Hentikan utterance / audio sebelumnya
   stopSpeech();
 
-  setTimeout(() => {
-    try {
-      if (window.speechSynthesis.paused) {
-        window.speechSynthesis.resume();
+  // Mode "locked_id" (Default & Rekomendasi):
+  // Menjamin 100% berbahasa Indonesia natural tanpa terpengaruh bahasa OBS / Windows
+  if (ttsMode === "locked_id") {
+    setTimeout(() => {
+      try {
+        const player = getTtsAudioPlayer();
+        player.src = `/api/tts?text=${encodeURIComponent(spokenText)}`;
+        player.play().catch((err) => {
+          console.warn("TTS Audio autoplay caught:", err);
+        });
+      } catch (err) {
+        console.warn("Gagal memutar audio TTS Indonesia:", err);
       }
+    }, 45);
+    return;
+  }
 
-      const utterance = new SpeechSynthesisUtterance(spokenText);
-      // PENTING: Simpan di global activeUtterance agar TIDAK DI-GARBAGE COLLECT oleh V8 saat berbicara
-      activeUtterance = utterance;
-
-      const voice = getBestIndonesianVoice();
-      if (voice) {
-        utterance.voice = voice;
-      }
-      utterance.lang = "id-ID";
-      utterance.rate = 1.05;
-      utterance.pitch = 1.0;
-
-      utterance.onend = () => {
-        clearTTSWatchdog();
-        activeUtterance = null;
-      };
-
-      utterance.onerror = (e) => {
-        clearTTSWatchdog();
-        activeUtterance = null;
-        if (e.error !== "canceled" && e.error !== "interrupted") {
-          console.warn("TTS error:", e.error);
-        }
-      };
-
-      // Watchdog Anti-Freeze Chromium: Menjaga audio thread tetap lancar dan tidak stuttering
-      clearTTSWatchdog();
-      ttsWatchdogTimer = setInterval(() => {
-        if (!('speechSynthesis' in window)) {
-          clearTTSWatchdog();
-          return;
-        }
-        if (window.speechSynthesis.speaking) {
-          window.speechSynthesis.pause();
-          window.speechSynthesis.resume();
-        } else {
-          clearTTSWatchdog();
-        }
-      }, 9000);
-
-      window.speechSynthesis.speak(utterance);
-    } catch (err) {
-      console.warn("TTS tidak didukung atau tertahan browser:", err);
-      clearTTSWatchdog();
-      activeUtterance = null;
+  // Mode "browser": Menggunakan Web Speech API jika tersedia suara Bahasa Indonesia
+  if (ttsMode === "browser") {
+    const indonesianVoice = getBestIndonesianVoice();
+    if (!indonesianVoice) {
+      // JIKA OBS / SISTEM BAHASA INGGRIS DAN TIDAK ADA SUARA INDONESIA OFFLINE:
+      // Otomatis fallback ke audio backend agar tidak membaca teks dengan suara Inggris yang merusak lafal!
+      console.log("Suara id-ID offline tidak ditemukan di sistem. Fallback ke audio natural backend.");
+      setTimeout(() => {
+        try {
+          const player = getTtsAudioPlayer();
+          player.src = `/api/tts?text=${encodeURIComponent(spokenText)}`;
+          player.play().catch(() => {});
+        } catch (_) {}
+      }, 45);
+      return;
     }
-  }, 45);
+
+    if (!('speechSynthesis' in window) || typeof SpeechSynthesisUtterance === 'undefined') return;
+
+    setTimeout(() => {
+      try {
+        if (window.speechSynthesis.paused) {
+          window.speechSynthesis.resume();
+        }
+
+        const utterance = new SpeechSynthesisUtterance(spokenText);
+        activeUtterance = utterance;
+        utterance.voice = indonesianVoice;
+        utterance.lang = "id-ID";
+        utterance.rate = 1.05;
+        utterance.pitch = 1.0;
+
+        utterance.onend = () => {
+          clearTTSWatchdog();
+          activeUtterance = null;
+        };
+
+        utterance.onerror = (e) => {
+          clearTTSWatchdog();
+          activeUtterance = null;
+          if (e.error !== "canceled" && e.error !== "interrupted") {
+            console.warn("TTS error:", e.error);
+          }
+        };
+
+        clearTTSWatchdog();
+        ttsWatchdogTimer = setInterval(() => {
+          if (!('speechSynthesis' in window)) {
+            clearTTSWatchdog();
+            return;
+          }
+          if (window.speechSynthesis.speaking) {
+            window.speechSynthesis.pause();
+            window.speechSynthesis.resume();
+          } else {
+            clearTTSWatchdog();
+          }
+        }, 9000);
+
+        window.speechSynthesis.speak(utterance);
+      } catch (err) {
+        console.warn("TTS tidak didukung atau tertahan browser:", err);
+        clearTTSWatchdog();
+        activeUtterance = null;
+      }
+    }, 45);
+  }
 }
 
 // ============================================================
@@ -560,9 +608,16 @@ function connect() {
         if (message.theme && !window.__LOCKED_THEME__) {
           applyTheme(message.theme);
         }
+        if (message.tts_mode) {
+          ttsMode = message.tts_mode;
+        }
       } else if (message.type === "theme_changed") {
         if (!window.__LOCKED_THEME__ && message.theme) {
           applyTheme(message.theme);
+        }
+      } else if (message.type === "tts_setting_changed") {
+        if (message.tts_mode) {
+          ttsMode = message.tts_mode;
         }
       }
     } catch (_) {}

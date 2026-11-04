@@ -51,8 +51,11 @@ function connectSocket() {
       if (message.connection) renderTikTokConnection(message.connection);
       if (message.music) renderMusicState(message.music);
       if (message.theme) updateActiveThemeUI(message.theme);
+      if (message.tts_mode) updateTTSSettingUI(message.tts_mode);
     } else if (message.type === "theme_changed") {
       if (message.theme) updateActiveThemeUI(message.theme);
+    } else if (message.type === "tts_setting_changed") {
+      if (message.tts_mode) updateTTSSettingUI(message.tts_mode);
     }
   };
   socket.onclose = () => {
@@ -807,6 +810,117 @@ function renderThemes(themes, activeThemeId) {
   });
 }
 
+// ============================================================
+// TTS SETTINGS ENGINE
+// ============================================================
+
+let currentTTSMode = "locked_id";
+let ttsPreviewAudio = null;
+
+async function loadTTSSettings() {
+  try {
+    const res = await api("/api/settings/tts");
+    if (res && res.tts_mode) {
+      updateTTSSettingUI(res.tts_mode);
+    }
+  } catch (err) {
+    console.warn("Gagal memuat pengaturan TTS:", err);
+  }
+}
+
+function updateTTSSettingUI(mode) {
+  currentTTSMode = mode || "locked_id";
+  const radios = document.querySelectorAll('input[name="ttsModeRadio"]');
+  radios.forEach((r) => {
+    r.checked = r.value === currentTTSMode;
+  });
+
+  const badge = $("ttsStatusBadge");
+  const noteAlert = $("ttsNoteAlert");
+  const noteText = $("ttsNoteText");
+
+  if (currentTTSMode === "locked_id") {
+    if (badge) {
+      badge.className = "badge bg-green-lt";
+      badge.textContent = "TERKUNCI INDONESIA";
+    }
+    if (noteAlert) noteAlert.className = "alert alert-success mt-3 mb-0 py-2 d-flex align-items-center gap-2";
+    if (noteText) {
+      noteText.innerHTML = "<strong>Status Suara:</strong> Suara kuis saat ini terkunci di Bahasa Indonesia. Teks soal akan dibacakan dengan lafal Indonesia natural tanpa aksen asing.";
+    }
+  } else if (currentTTSMode === "browser") {
+    if (badge) {
+      badge.className = "badge bg-azure-lt";
+      badge.textContent = "OFFLINE SISTEM/OBS";
+    }
+    if (noteAlert) noteAlert.className = "alert alert-info mt-3 mb-0 py-2 d-flex align-items-center gap-2";
+    if (noteText) {
+      noteText.innerHTML = "<strong>Status Suara:</strong> Menggunakan voice engine sistem Windows/OBS. Jika suara Bahasa Indonesia tidak terpasang di Windows, sistem otomatis fallback ke audio natural backend agar tidak membaca dalam Bahasa Inggris.";
+    }
+  } else {
+    if (badge) {
+      badge.className = "badge bg-secondary-lt";
+      badge.textContent = "SUARA DINONAKTIFKAN";
+    }
+    if (noteAlert) noteAlert.className = "alert alert-secondary mt-3 mb-0 py-2 d-flex align-items-center gap-2";
+    if (noteText) {
+      noteText.innerHTML = "<strong>Status Suara:</strong> Pembacaan suara kuis dinonaktifkan (mute). Hanya musik latar dan efek suara yang terdengar.";
+    }
+  }
+}
+
+function initTTSControls() {
+  const radios = document.querySelectorAll('input[name="ttsModeRadio"]');
+  radios.forEach((radio) => {
+    radio.addEventListener("change", async (e) => {
+      if (!e.target.checked) return;
+      const selected = e.target.value;
+      try {
+        await api("/api/settings/tts", "POST", { mode: selected });
+        updateTTSSettingUI(selected);
+        setNotice(`Pengaturan suara TTS kuis berhasil disimpan: ${selected}`);
+      } catch (err) {
+        setNotice(`Gagal menyimpan pengaturan TTS: ${err.message}`, "error");
+      }
+    });
+  });
+
+  const previewBtn = $("ttsPreviewBtn");
+  if (previewBtn) {
+    previewBtn.addEventListener("click", () => {
+      const sampleText = "Pertanyaan nomor satu: Apakah nama ibukota Negara Indonesia?";
+      if (currentTTSMode === "disabled") {
+        setNotice("Suara sedang dinonaktifkan (Mute). Ubah ke mode Terkunci Indonesia untuk mendengar suara.", "warning");
+        return;
+      }
+      previewBtn.disabled = true;
+      previewBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span> Memutar...';
+
+      if (ttsPreviewAudio) {
+        try {
+          ttsPreviewAudio.pause();
+          ttsPreviewAudio.currentTime = 0;
+        } catch (_) {}
+      }
+
+      ttsPreviewAudio = new Audio(`/api/tts?text=${encodeURIComponent(sampleText)}`);
+      ttsPreviewAudio.onended = () => {
+        previewBtn.disabled = false;
+        previewBtn.innerHTML = '<i class="ti ti-player-play me-1"></i> Tes Suara';
+      };
+      ttsPreviewAudio.onerror = () => {
+        previewBtn.disabled = false;
+        previewBtn.innerHTML = '<i class="ti ti-player-play me-1"></i> Tes Suara';
+        setNotice("Gagal memutar audio pratinjau TTS.", "error");
+      };
+      ttsPreviewAudio.play().catch(() => {
+        previewBtn.disabled = false;
+        previewBtn.innerHTML = '<i class="ti ti-player-play me-1"></i> Tes Suara';
+      });
+    });
+  }
+}
+
 $("simulatorForm").addEventListener("submit", async (event) => {
   event.preventDefault();
   try {
@@ -1350,6 +1464,8 @@ $("btnCancelDelModal")?.addEventListener("click", () => hideModal($("deleteConfi
   connectSocket();
   updateEventSimulatorFields();
   await loadThemes();
+  initTTSControls();
+  await loadTTSSettings();
   try {
     renderMusicState(await api("/api/music/state"));
   } catch (error) {

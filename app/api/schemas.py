@@ -32,6 +32,10 @@ class ThemeChangeRequest(BaseModel):
     theme: str = Field(min_length=1, max_length=64)
 
 
+class TTSSettingRequest(BaseModel):
+    mode: Literal["locked_id", "browser", "disabled"] = "locked_id"
+
+
 class NextQuestionRequest(BaseModel):
     mode: Literal["random", "manual"] | None = None
     question_id: str | None = None

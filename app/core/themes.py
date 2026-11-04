@@ -49,11 +49,11 @@ DEFAULT_THEMES = [
 
 def _load_settings() -> dict:
     if not SETTINGS_FILE.exists():
-        return {"active_theme": "tema1"}
+        return {"active_theme": "tema1", "tts_mode": "locked_id"}
     try:
         return json.loads(SETTINGS_FILE.read_text(encoding="utf-8"))
     except Exception:
-        return {"active_theme": "tema1"}
+        return {"active_theme": "tema1", "tts_mode": "locked_id"}
 
 
 def _save_settings(settings: dict) -> None:
@@ -105,3 +105,20 @@ def set_active_theme(theme_id: str) -> str:
     settings["active_theme"] = theme_id
     _save_settings(settings)
     return theme_id
+
+
+def get_tts_mode() -> str:
+    settings = _load_settings()
+    mode = settings.get("tts_mode", "locked_id")
+    if mode not in {"locked_id", "browser", "disabled"}:
+        return "locked_id"
+    return mode
+
+
+def set_tts_mode(mode: str) -> str:
+    if mode not in {"locked_id", "browser", "disabled"}:
+        raise ValueError(f"Mode TTS '{mode}' tidak valid. Pilihan: 'locked_id', 'browser', 'disabled'")
+    settings = _load_settings()
+    settings["tts_mode"] = mode
+    _save_settings(settings)
+    return mode

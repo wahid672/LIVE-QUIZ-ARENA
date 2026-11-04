@@ -20,10 +20,18 @@ from app.api.schemas import (
     QuestionUpdateRequest,
     ToggleCharacterAnimationRequest,
     ThemeChangeRequest,
+    TTSSettingRequest,
 )
 from app.api.websocket import ConnectionManager
 from app.core.config import APP_NAME, QUESTION_FILE
-from app.core.themes import get_available_themes, get_active_theme, set_active_theme
+from app.core.themes import (
+    get_available_themes,
+    get_active_theme,
+    set_active_theme,
+    get_tts_mode,
+    set_tts_mode,
+)
+from app.core.tts import generate_indonesian_tts
 from app.game.engine import QuizEngine
 from app.game.question_bank import QuestionBank
 from app.live.interaction_manager import LiveInteractionManager
@@ -45,6 +53,7 @@ async def _state_broadcaster(app: FastAPI) -> None:
             connection_state = await app.state.tiktok.get_status()
             music_state = await app.state.music.get_state()
             active_theme = get_active_theme()
+            current_tts_mode = get_tts_mode()
             await app.state.connections.broadcast({
                 "type": "game_state",
                 "data": state,
@@ -52,6 +61,7 @@ async def _state_broadcaster(app: FastAPI) -> None:
                 "connection": connection_state,
                 "music": music_state,
                 "theme": active_theme,
+                "tts_mode": current_tts_mode,
             })
         except asyncio.CancelledError:
             raise
@@ -151,10 +161,12 @@ async def websocket_endpoint(websocket: WebSocket):
         connection_state = await websocket.app.state.tiktok.get_status()
         music_state = await websocket.app.state.music.get_state()
         active_theme = get_active_theme()
+        current_tts_mode = get_tts_mode()
         await websocket.send_json({
             "type": "game_state", "data": state,
             "live": live_state, "connection": connection_state,
             "music": music_state, "theme": active_theme,
+            "tts_mode": current_tts_mode,
         })
         # Client tidak perlu mengirim data; menunggu disconnect menjaga koneksi hidup.
         while True:
@@ -475,3 +487,44 @@ async def change_active_theme(payload: ThemeChangeRequest, request: Request) -> 
         }
     except ValueError as error:
         raise HTTPException(status_code=400, detail=str(error)) from error
+
+
+@app.get("/api/tts", tags=["TTS"])
+async def get_tts_audio(text: str = "") -> Response:
+    clean = text.strip()
+    if not clean:
+        return Response(status_code=204)
+    audio = await generate_indonesian_tts(clean)
+    if not audio:
+        return Response(status_code=204)
+    return Response(
+        content=audio,
+        media_type="audio/mpeg",
+        headers={
+            "Cache-Control": "public, max-age=86400",
+            "Accept-Ranges": "bytes",
+        },
+    )
+
+
+@app.get("/api/settings/tts", tags=["TTS"])
+async def get_tts_setting() -> dict[str, Any]:
+    return {"tts_mode": get_tts_mode()}
+
+
+@app.post("/api/settings/tts", tags=["TTS"])
+async def update_tts_setting(payload: TTSSettingRequest, request: Request) -> dict[str, Any]:
+    try:
+        new_mode = set_tts_mode(payload.mode)
+        await request.app.state.connections.broadcast({
+            "type": "tts_setting_changed",
+            "tts_mode": new_mode,
+        })
+        return {
+            "status": "ok",
+            "tts_mode": new_mode,
+            "message": f"Pengaturan mode TTS berhasil diubah menjadi '{new_mode}'",
+        }
+    except ValueError as error:
+        raise HTTPException(status_code=400, detail=str(error)) from error
+
